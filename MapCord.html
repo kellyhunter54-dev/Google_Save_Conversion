@@ -1,0 +1,2493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maps Coordinate Extractor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --secondary: #00D9FF;
+            --bg-main: #FAFBFC;
+            --bg-card: #FFFFFF;
+            --text-primary: #0A1929;
+            --text-secondary: #4A5568;
+            --border: #E2E8F0;
+            --success: #00C853;
+            --error: #FF3B30;
+            --warning: #FF9500;
+        }
+
+        [data-theme="dark"] {
+            --primary: #4D9FFF;
+            --primary-dark: #3D8FEF;
+            --secondary: #00D9FF;
+            --bg-main: #0A1929;
+            --bg-card: #132F4C;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B0BAC9;
+            --border: #1E3A5F;
+            --success: #00C853;
+            --error: #FF6B6B;
+            --warning: #FFB84D;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scrollbar-gutter: stable; /* Reserve scrollbar space but only show when needed */
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-icon {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 8px;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,102,255,0.3);
+        }
+
+        .theme-toggle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.125rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            border-color: var(--primary);
+            background: var(--bg-card);
+        }
+
+        .theme-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .theme-toggle:hover .theme-icon {
+            transform: rotate(20deg);
+        }
+
+        /* Theme Switch (Toggle) */
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+
+        .theme-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .theme-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border);
+            transition: 0.3s;
+            border-radius: 28px;
+        }
+
+        .theme-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .theme-switch input:checked + .theme-slider {
+            background-color: var(--primary);
+        }
+
+        .theme-switch input:checked + .theme-slider:before {
+            transform: translateX(24px);
+        }
+
+        .theme-switch:hover .theme-slider {
+            box-shadow: 0 0 8px rgba(0,102,255,0.3);
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 0;
+            position: relative;
+        }
+
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: color 0.2s ease;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            position: relative;
+        }
+
+        .nav-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            color: var(--primary);
+        }
+
+        .nav-btn.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-btn.active::after {
+            width: calc(100% - 2rem);
+        }
+
+        .user-email {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .btn-logout {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background: var(--bg-main);
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            padding: 3rem 2rem;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* Auth Pages (Login/Register) */
+        .auth-container {
+            display: none;
+            max-width: 450px;
+            margin: 5rem auto;
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 3rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .auth-container.active {
+            display: block;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .auth-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .auth-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0,102,255,0.1);
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,102,255,0.25);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,102,255,0.35);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-main);
+            border-color: var(--primary);
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-switch a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            padding: 1rem;
+            background: rgba(255,59,48,0.1);
+            border: 1px solid var(--error);
+            border-radius: 8px;
+            color: var(--error);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* Profile Section */
+        .profile-section {
+            display: none;
+        }
+
+        .profile-section.active {
+            display: block;
+        }
+
+        .settings-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .settings-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .settings-card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .settings-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-card-header .settings-card-title {
+            margin-bottom: 0;
+        }
+
+        .edit-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .edit-btn:hover {
+            background: var(--bg-main);
+            border-color: var(--primary);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-main);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-size: 0.9375rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1.5rem;
+            background: var(--bg-main);
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .danger-zone {
+            border: 1px solid var(--error);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-danger:hover {
+            background: #FF1F14;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255,59,48,0.3);
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+        }
+
+        .dashboard-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-description {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+        }
+
+        .dashboard-actions {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .lists-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .list-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .list-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+
+        .list-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .list-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .list-menu {
+            position: relative;
+        }
+
+        .list-menu-btn {
+            padding: 0.25rem 0.5rem;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+        }
+
+        .list-menu-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .list-dropdown-menu {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 150px;
+            overflow: hidden;
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+        }
+
+        .dropdown-item:hover {
+            background: var(--bg-main);
+            color: var(--primary);
+        }
+
+        .dropdown-item.danger {
+            color: var(--text-secondary);
+        }
+
+        .dropdown-item.danger:hover {
+            background: rgba(255,59,48,0.1);
+            color: var(--error);
+        }
+
+        .list-stats {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .list-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 2px dashed var(--border);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state-text {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Upload Section (same as before) */
+        .upload-section {
+            display: none;
+        }
+
+        .upload-section.active {
+            display: block;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-bottom: 2rem;
+        }
+
+        .back-button:hover {
+            background: var(--bg-main);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Include all previous upload/preview styles */
+        .upload-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 3rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .dropzone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 4rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-main);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dropzone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0,102,255,0.03), rgba(0,217,255,0.03));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .dropzone:hover {
+            border-color: var(--primary);
+            background: var(--bg-card);
+        }
+
+        .dropzone:hover::before {
+            opacity: 1;
+        }
+
+        .dropzone.dragover {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(0,102,255,0.05), rgba(0,217,255,0.05));
+            border-style: solid;
+            transform: scale(1.02);
+        }
+
+        .dropzone-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .upload-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+        }
+
+        .upload-button {
+            display: inline-block;
+            margin-top: 1.5rem;
+            padding: 0.875rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,102,255,0.2);
+        }
+
+        .upload-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,102,255,0.3);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        /* Preview section styles (keeping all from before) */
+        .preview-section {
+            display: none;
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            animation: slideUp 0.4s ease;
+        }
+
+        .preview-section.active {
+            display: block;
+        }
+
+        .match-info {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(0,200,83,0.1), rgba(0,230,118,0.1));
+            border: 1px solid var(--success);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .match-info-title {
+            font-weight: 600;
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+            color: var(--success);
+        }
+
+        .match-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .match-stat {
+            text-align: center;
+        }
+
+        .match-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .match-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Keep all table and column styles from before */
+        .columns-section {
+            margin-top: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 2px;
+        }
+
+        .columns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .column-badge {
+            padding: 0.75rem 1rem;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.2s ease;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .column-badge:hover {
+            border-color: var(--primary);
+            background: var(--bg-card);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .column-badge.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-color: var(--primary);
+            font-weight: 600;
+        }
+
+        .column-badge.inactive {
+            background: var(--bg-main);
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .data-preview {
+            margin-top: 2rem;
+        }
+
+        .preview-table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .preview-table thead {
+            background: var(--bg-main);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .preview-table th.hidden,
+        .preview-table td.hidden {
+            display: none;
+        }
+
+        .preview-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .preview-table th.new-column {
+            background: linear-gradient(135deg, rgba(0,102,255,0.08), rgba(0,217,255,0.08));
+            color: var(--primary);
+        }
+
+        .preview-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .preview-table td.url-cell {
+            text-align: center;
+        }
+
+        .open-link-btn {
+            display: inline-block;
+            padding: 0.375rem 0.875rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .open-link-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,102,255,0.3);
+        }
+
+        .preview-table td.new-column {
+            background: rgba(0,102,255,0.02);
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .preview-table td.processing {
+            background: linear-gradient(90deg, rgba(255,149,0,0.1) 0%, rgba(255,149,0,0.05) 100%);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .preview-table td.completed {
+            background: linear-gradient(90deg, rgba(0,200,83,0.1) 0%, rgba(0,200,83,0.05) 100%);
+            color: var(--text-primary);
+            font-style: normal;
+        }
+
+        .preview-table td.error {
+            background: linear-gradient(90deg, rgba(255,59,48,0.1) 0%, rgba(255,59,48,0.05) 100%);
+            color: var(--error);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .preview-table tbody tr:hover {
+            background: var(--bg-main);
+        }
+
+        .preview-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .row-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .row-status.pending {
+            background: var(--border);
+        }
+
+        .row-status.processing {
+            background: var(--warning);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .row-status.completed {
+            background: var(--success);
+        }
+
+        .row-status.error {
+            background: var(--error);
+        }
+
+        .row-count {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(0,102,255,0.05), rgba(0,217,255,0.05));
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        /* Progress Section */
+        .progress-section {
+            display: none;
+            margin-top: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(0,102,255,0.03), rgba(0,217,255,0.03));
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .progress-section.active {
+            display: block;
+            animation: slideUp 0.4s ease;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .progress-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .progress-stats {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar-container {
+            height: 8px;
+            background: var(--bg-main);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .progress-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .progress-stat {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 8px;
+        }
+
+        .progress-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .progress-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.25rem;
+        }
+
+        .action-buttons {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            main {
+                padding: 2rem 1rem;
+            }
+
+            .lists-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .dashboard-actions {
+                flex-direction: column;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header id="mainHeader">
+        <div class="header-content">
+            <div class="logo-section">
+                <span class="logo-icon"></span>
+                <span class="logo">Maps Coordinate Extractor</span>
+            </div>
+            <div class="user-section">
+                <div class="nav-buttons" id="navButtons">
+                    <button class="nav-btn active" id="navDashboard" onclick="showDemoDashboard()">
+                        Dashboard
+                    </button>
+                    <button class="nav-btn" id="navUpload" onclick="showUploadFromDashboard()">
+                        Upload
+                    </button>
+                    <button class="nav-btn" id="navProfile" onclick="showProfile()">
+                        Account
+                    </button>
+                </div>
+                <div class="user-avatar" id="userAvatar" onclick="showProfile()" title="Account Settings">D</div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Login Page -->
+        <div class="auth-container" id="loginPage" style="display: none;">
+            <h1 class="auth-title">Welcome Back</h1>
+            <p class="auth-subtitle">Sign in to your account</p>
+            
+            <div id="loginError" class="error-message" style="display: none;"></div>
+            
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Sign In</button>
+            </form>
+            
+            <div class="auth-switch">
+                Don't have an account? <a href="#" onclick="showRegister(); return false;">Create one</a>
+            </div>
+        </div>
+
+        <!-- Register Page -->
+        <div class="auth-container" id="registerPage">
+            <h1 class="auth-title">Create Account</h1>
+            <p class="auth-subtitle">Sign up to get started</p>
+            
+            <div id="registerError" class="error-message" style="display: none;"></div>
+            
+            <form onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-input" id="registerPassword" required minlength="6">
+                    <small style="color: var(--text-secondary); font-size: 0.875rem;">Minimum 6 characters</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-input" id="registerPasswordConfirm" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </form>
+            
+            <div class="auth-switch">
+                Already have an account? <a href="#" onclick="showLogin(); return false;">Sign in</a>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="dashboard active" id="dashboard">
+            <div class="dashboard-header">
+                <h1 class="page-title">My Lists</h1>
+                <p class="page-description">Manage your location collections</p>
+            </div>
+
+            <div class="dashboard-actions">
+                <button class="btn btn-primary" onclick="showUpload()">
+                    ➕ Upload New File
+                </button>
+            </div>
+
+            <div class="loading" id="dashboardLoading">
+                <div class="spinner"></div>
+                <p style="margin-top: 1rem; color: var(--text-secondary);">Loading your lists...</p>
+            </div>
+
+            <div id="listsContainer"></div>
+        </div>
+
+        <!-- Profile Section -->
+        <div class="profile-section" id="profileSection">
+            <div class="dashboard-header">
+                <h1 class="page-title">Account Settings</h1>
+                <p class="page-description">Manage your account and preferences</p>
+            </div>
+
+            <div class="settings-container">
+                <div class="settings-card">
+                    <div class="settings-card-header">
+                        <h3 class="settings-card-title">Account Information</h3>
+                        <button class="edit-btn" id="editAccountBtn" onclick="toggleEditAccount()">Edit</button>
+                    </div>
+                    
+                    <div id="accountInfoView">
+                        <div class="info-row">
+                            <span class="info-label">First Name</span>
+                            <span class="info-value" id="firstNameDisplay">Demo</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Last Name</span>
+                            <span class="info-value" id="lastNameDisplay">User</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Email Address</span>
+                            <span class="info-value">demo@example.com</span>
+                        </div>
+                    </div>
+
+                    <form id="accountInfoEdit" style="display: none;" onsubmit="saveAccountInfo(event)">
+                        <div class="form-group">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-input" id="firstNameEdit" value="Demo" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-input" id="lastNameEdit" value="User" required>
+                        </div>
+                        
+                        <div style="border-top: 1px solid var(--border); margin: 1.5rem -2rem 1.5rem -2rem; padding: 1.5rem 2rem 0 2rem;">
+                            <h3 class="settings-card-title" style="margin-bottom: 1.5rem;">Change Password</h3>
+                            <div class="form-group">
+                                <label class="form-label">Current Password</label>
+                                <input type="password" class="form-input" id="currentPassword">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">New Password</label>
+                                <input type="password" class="form-input" id="newPassword" minlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-input" id="confirmNewPassword" minlength="6">
+                            </div>
+                            <small style="color: var(--text-secondary); font-size: 0.875rem; display: block; margin-top: -0.5rem;">Leave blank to keep current password</small>
+                        </div>
+                        
+                        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                            <button type="submit" class="btn btn-primary" style="width: auto;">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" style="width: auto;" onclick="cancelEditAccount()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="settings-card">
+                    <h3 class="settings-card-title">Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">4</div>
+                            <div class="stat-label">Total Lists</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">341</div>
+                            <div class="stat-label">Total Locations</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">Jan 2025</div>
+                            <div class="stat-label">Member Since</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <h3 class="settings-card-title">Appearance</h3>
+                    <div class="info-row">
+                        <div>
+                            <span class="info-label" style="display: block; margin-bottom: 0.25rem;">Theme</span>
+                            <span style="font-size: 0.875rem; color: var(--text-secondary);">Choose your preferred color scheme</span>
+                        </div>
+                        <label class="theme-switch">
+                            <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+                            <span class="theme-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-card danger-zone">
+                    <h3 class="settings-card-title">Danger Zone</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">Once you delete your account, there is no going back. All your lists and locations will be permanently deleted.</p>
+                    <button class="btn btn-danger" onclick="handleDeleteAccount()">Delete Account</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="upload-section" id="uploadSection">
+            <h1 class="page-title">Upload File</h1>
+            <p class="page-description">Upload your CSV or Excel file with Google Maps URLs</p>
+
+            <div class="upload-container">
+                <div class="dropzone" id="dropzone">
+                    <div class="dropzone-content">
+                        <div class="upload-icon">📍</div>
+                        <div class="upload-text">Drag and drop your file here</div>
+                        <div class="upload-subtext">or click to browse (CSV, XLSX, XLS)</div>
+                        <button class="upload-button" onclick="document.getElementById('fileInput').click()">
+                            Choose File
+                        </button>
+                    </div>
+                </div>
+                <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+            </div>
+
+            <!-- Preview Section -->
+            <div class="preview-section" id="previewSection">
+                <div id="matchInfo" class="match-info" style="display: none;">
+                    <div class="match-info-title">📊 Smart Matching Results</div>
+                    <div class="match-stats">
+                        <div class="match-stat">
+                            <div class="match-stat-value" id="totalUploaded">0</div>
+                            <div class="match-stat-label">Total Uploaded</div>
+                        </div>
+                        <div class="match-stat">
+                            <div class="match-stat-value" id="alreadyExists">0</div>
+                            <div class="match-stat-label">Already Exist</div>
+                        </div>
+                        <div class="match-stat">
+                            <div class="match-stat-value" id="newLocations">0</div>
+                            <div class="match-stat-label">New to Process</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="columns-section">
+                    <h3 class="section-title">Detected Columns</h3>
+                    <div class="columns-grid" id="columnsGrid"></div>
+                </div>
+
+                <div class="data-preview">
+                    <h3 class="section-title">Data Preview</h3>
+                    <div class="preview-table-container">
+                        <table class="preview-table" id="previewTable">
+                            <thead id="tableHead"></thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="row-count" id="rowCount"></div>
+                </div>
+
+                <div class="progress-section" id="progressSection">
+                    <div class="progress-header">
+                        <div class="progress-title" id="progressTitle">
+                            Extracting Coordinates
+                            <span class="processing-indicator"><span class="spinner"></span></span>
+                        </div>
+                        <div class="progress-stats" id="progressStats">0 / 0 (0%)</div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="progress-details">
+                        <div class="progress-stat">
+                            <div class="progress-stat-value" id="completedCount">0</div>
+                            <div class="progress-stat-label">Completed</div>
+                        </div>
+                        <div class="progress-stat">
+                            <div class="progress-stat-value" id="processingCount">0</div>
+                            <div class="progress-stat-label">Processing</div>
+                        </div>
+                        <div class="progress-stat">
+                            <div class="progress-stat-value" id="errorCount">0</div>
+                            <div class="progress-stat-label">Errors</div>
+                        </div>
+                        <div class="progress-stat">
+                            <div class="progress-stat-value" id="remainingCount">0</div>
+                            <div class="progress-stat-label">Remaining</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons" id="actionButtons"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- List Name Modal -->
+    <div class="modal" id="listNameModal">
+        <div class="modal-content">
+            <h2 class="modal-title">Name Your List</h2>
+            <div class="form-group">
+                <label class="form-label">List Name</label>
+                <input type="text" class="form-input" id="newListName" placeholder="e.g., Thailand Trip 2025">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeListNameModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmListName()">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Choose List Modal -->
+    <div class="modal" id="chooseListModal">
+        <div class="modal-content">
+            <h2 class="modal-title">Choose List to Update</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Found <strong id="matchingCount">0</strong> matching URLs. 
+                Choose which list to update:
+            </p>
+            <div id="listChoices" style="max-height: 300px; overflow-y: auto;"></div>
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                <button class="btn btn-secondary" style="width: 100%;" onclick="createNewListOption()">
+                    ➕ Create New List Instead
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Powered by Selenium • Built with ❤️</p>
+    </footer>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        // ===== CONFIGURATION =====
+        // TODO: Change this to your Raspberry Pi address
+        const API_BASE = 'http://localhost:5000';  // Change to your Pi's IP or domain
+        
+        // ===== GLOBAL STATE =====
+        let currentUser = null;
+        let uploadedFile = null;
+        let parsedData = null;
+        let activeColumns = new Set();
+        let socket = null;
+        let selectedListId = null;
+        let matchingResults = null;
+        let accountInfoEditMode = false;
+
+        // ===== DARK MODE =====
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeToggle = document.getElementById('themeToggle');
+            
+            if (themeToggle.checked) {
+                html.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Load saved theme on page load
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeToggle = document.getElementById('themeToggle');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                if (themeToggle) {
+                    themeToggle.checked = true;
+                }
+            }
+        }
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load theme preference
+            loadTheme();
+            
+            // DEMO MODE - Show dashboard by default
+            const email = 'demo@example.com';
+            const firstLetter = email.charAt(0).toUpperCase();
+            document.getElementById('userAvatar').textContent = firstLetter;
+            document.getElementById('loginPage').classList.remove('active');
+            showDemoDashboard();
+            setupFileUpload();
+        });
+
+        // ===== AUTHENTICATION =====
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE}/api/check-auth`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    currentUser = data.email;
+                    showDashboard();
+                    loadLists();
+                } else {
+                    showLogin();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                showLogin();
+            }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentUser = data.email;
+                    showDashboard();
+                    loadLists();
+                } else {
+                    showError('loginError', data.error);
+                }
+            } catch (error) {
+                showError('loginError', 'Connection error. Please check your network.');
+            }
+        }
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerPasswordConfirm').value;
+            
+            if (password !== confirmPassword) {
+                showError('registerError', 'Passwords do not match');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentUser = data.email;
+                    showDashboard();
+                    loadLists();
+                } else {
+                    showError('registerError', data.error);
+                }
+            } catch (error) {
+                showError('registerError', 'Connection error. Please check your network.');
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch(`${API_BASE}/api/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            
+            currentUser = null;
+            showLogin();
+        }
+
+        function showError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // ===== PAGE NAVIGATION =====
+        function showLogin() {
+            document.getElementById('mainHeader').style.display = 'none';
+            document.getElementById('loginPage').classList.add('active');
+            document.getElementById('registerPage').classList.remove('active');
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('uploadSection').classList.remove('active');
+        }
+
+        function showRegister() {
+            document.getElementById('mainHeader').style.display = 'none';
+            document.getElementById('loginPage').classList.remove('active');
+            document.getElementById('registerPage').classList.add('active');
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('uploadSection').classList.remove('active');
+        }
+
+        function showDashboard() {
+            document.getElementById('mainHeader').style.display = 'block';
+            document.getElementById('userEmail').textContent = currentUser;
+            document.getElementById('loginPage').classList.remove('active');
+            document.getElementById('registerPage').classList.remove('active');
+            document.getElementById('dashboard').classList.add('active');
+            document.getElementById('uploadSection').classList.remove('active');
+        }
+
+        // ===== DASHBOARD =====
+        async function loadLists() {
+            document.getElementById('dashboardLoading').classList.add('active');
+            document.getElementById('listsContainer').innerHTML = '';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/lists`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                document.getElementById('dashboardLoading').classList.remove('active');
+                
+                if (data.lists && data.lists.length > 0) {
+                    renderLists(data.lists);
+                } else {
+                    renderEmptyState();
+                }
+            } catch (error) {
+                console.error('Error loading lists:', error);
+                document.getElementById('dashboardLoading').classList.remove('active');
+                document.getElementById('listsContainer').innerHTML = '<p style="text-align: center; color: var(--error);">Error loading lists</p>';
+            }
+        }
+
+        function renderLists(lists) {
+            const container = document.getElementById('listsContainer');
+            const grid = document.createElement('div');
+            grid.className = 'lists-grid';
+            
+            lists.forEach(list => {
+                const card = document.createElement('div');
+                card.className = 'list-card';
+                card.onclick = () => viewList(list.id);
+                
+                card.innerHTML = `
+                    <div class="list-card-header">
+                        <div class="list-name">${list.name}</div>
+                        <div class="list-menu">
+                            <button class="list-menu-btn" onclick="event.stopPropagation(); showListMenu(${list.id}, '${list.name}', event)">⋮</button>
+                        </div>
+                    </div>
+                    <div class="list-stats">
+                        <div class="list-stat">
+                            <span>📍</span>
+                            <span>${list.location_count} locations</span>
+                        </div>
+                        <div class="list-stat">
+                            <span>📅</span>
+                            <span>${new Date(list.updated_at).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+            
+            container.appendChild(grid);
+        }
+
+        function renderEmptyState() {
+            const container = document.getElementById('listsContainer');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📂</div>
+                    <div class="empty-state-title">No lists yet</div>
+                    <div class="empty-state-text">Upload your first file to get started</div>
+                    <button class="btn btn-primary" onclick="showUpload()">Upload File</button>
+                </div>
+            `;
+        }
+
+        function showListMenu(listId, listName, event) {
+            // Close any existing menus
+            const existingMenu = document.querySelector('.list-dropdown-menu');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+            
+            // Create dropdown menu
+            const dropdown = document.createElement('div');
+            dropdown.className = 'list-dropdown-menu';
+            dropdown.innerHTML = `
+                <div class="dropdown-item" onclick="event.stopPropagation(); renameListPrompt(${listId}, '${listName}')">
+                    <span>Rename</span>
+                </div>
+                <div class="dropdown-item danger" onclick="event.stopPropagation(); deleteListPrompt(${listId}, '${listName}')">
+                    <span>Delete</span>
+                </div>
+            `;
+            
+            // Position dropdown
+            const button = event.target.closest('.list-menu-btn');
+            const card = button.closest('.list-card');
+            card.style.position = 'relative';
+            dropdown.style.position = 'absolute';
+            dropdown.style.top = '3rem';
+            dropdown.style.right = '1rem';
+            dropdown.style.zIndex = '100';
+            
+            card.appendChild(dropdown);
+            
+            // Close menu when clicking outside
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(e) {
+                    if (!dropdown.contains(e.target)) {
+                        dropdown.remove();
+                        document.removeEventListener('click', closeMenu);
+                    }
+                });
+            }, 0);
+        }
+
+        function renameListPrompt(listId, listName) {
+            // Close dropdown
+            document.querySelector('.list-dropdown-menu')?.remove();
+            
+            const newName = prompt('Enter new name:', listName);
+            if (newName && newName.trim()) {
+                renameList(listId, newName.trim());
+            }
+        }
+
+        function deleteListPrompt(listId, listName) {
+            // Close dropdown
+            document.querySelector('.list-dropdown-menu')?.remove();
+            
+            if (confirm(`Delete list "${listName}"? This cannot be undone.`)) {
+                deleteList(listId);
+            }
+        }
+
+        async function renameList(listId, newName) {
+            try {
+                const response = await fetch(`${API_BASE}/api/lists/${listId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name: newName })
+                });
+                
+                if (response.ok) {
+                    loadLists();
+                } else {
+                    alert('Error renaming list');
+                }
+            } catch (error) {
+                console.error('Error renaming list:', error);
+                alert('Error renaming list');
+            }
+        }
+
+        async function deleteList(listId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/lists/${listId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    loadLists();
+                } else {
+                    alert('Error deleting list');
+                }
+            } catch (error) {
+                console.error('Error deleting list:', error);
+                alert('Error deleting list');
+            }
+        }
+
+        function viewList(listId) {
+            alert('View list details - Coming soon!');
+            // TODO: Show list details and locations
+        }
+
+        // ===== FILE UPLOAD =====
+        function setupFileUpload() {
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('fileInput');
+
+            dropzone.addEventListener('click', (e) => {
+                if (e.target.classList.contains('upload-button') || e.target.closest('.upload-button')) {
+                    return;
+                }
+                fileInput.click();
+            });
+
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('dragover');
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+        }
+
+        function handleFile(file) {
+            uploadedFile = file;
+            const extension = file.name.split('.').pop().toLowerCase();
+
+            if (!['csv', 'xlsx', 'xls'].includes(extension)) {
+                alert('Please upload a CSV, XLSX, or XLS file');
+                return;
+            }
+
+            // Parse file
+            if (extension === 'csv') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    Papa.parse(e.target.result, {
+                        header: true,
+                        complete: (results) => {
+                            parsedData = results.data.filter(row => Object.values(row).some(val => val));
+                            displayPreview();
+                        }
+                    });
+                };
+                reader.readAsText(file);
+            } else {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    parsedData = jsonData.filter(row => Object.values(row).some(val => val));
+                    displayPreview();
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }
+
+        function displayPreview() {
+            if (!parsedData || parsedData.length === 0) {
+                alert('No data found in file');
+                return;
+            }
+
+            document.getElementById('previewSection').classList.add('active');
+
+            const columns = Object.keys(parsedData[0]);
+            activeColumns = new Set(columns);
+
+            // Display column badges
+            const columnsGrid = document.getElementById('columnsGrid');
+            columnsGrid.innerHTML = '';
+            columns.forEach(col => {
+                const badge = document.createElement('div');
+                badge.className = 'column-badge active';
+                badge.textContent = col;
+                badge.dataset.column = col;
+                badge.onclick = () => toggleColumn(col);
+                columnsGrid.appendChild(badge);
+            });
+
+            // Build table
+            const tableHead = document.getElementById('tableHead');
+            const tableBody = document.getElementById('tableBody');
+            
+            tableHead.innerHTML = '<tr>' + 
+                '<th style="width: 40px;">●</th>' +
+                columns.map(col => `<th data-column="${col}">${col}</th>`).join('') + 
+                '<th class="new-column">Latitude</th>' +
+                '<th class="new-column">Longitude</th>' +
+                '<th class="new-column">Address</th>' +
+                '</tr>';
+            
+            tableBody.innerHTML = '';
+            parsedData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.id = `row-${index}`;
+                
+                // Status indicator
+                const statusTd = document.createElement('td');
+                statusTd.innerHTML = '<span class="row-status pending"></span>';
+                statusTd.id = `status-${index}`;
+                tr.appendChild(statusTd);
+                
+                // Original columns
+                columns.forEach(col => {
+                    const td = document.createElement('td');
+                    td.dataset.column = col;
+                    
+                    const cellValue = row[col] || '';
+                    const isURL = cellValue.toString().toLowerCase().includes('http://') || 
+                                  cellValue.toString().toLowerCase().includes('https://') ||
+                                  cellValue.toString().toLowerCase().includes('www.');
+                    
+                    if (isURL && cellValue) {
+                        td.className = 'url-cell';
+                        const link = document.createElement('a');
+                        link.href = cellValue;
+                        link.target = '_blank';
+                        link.rel = 'noopener noreferrer';
+                        link.className = 'open-link-btn';
+                        link.textContent = 'Open';
+                        td.appendChild(link);
+                    } else {
+                        td.textContent = cellValue;
+                        td.title = cellValue;
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                
+                // New columns (empty)
+                ['lat', 'lng', 'addr'].forEach(prefix => {
+                    const td = document.createElement('td');
+                    td.className = 'new-column';
+                    td.textContent = '—';
+                    td.id = `${prefix}-${index}`;
+                    tr.appendChild(td);
+                });
+                
+                tableBody.appendChild(tr);
+            });
+
+            document.getElementById('rowCount').textContent = `Total rows: ${parsedData.length}`;
+
+            // Show action buttons
+            document.getElementById('actionButtons').innerHTML = `
+                <button class="btn btn-primary" onclick="prepareExtraction()">Extract Coordinates</button>
+            `;
+
+            setTimeout(() => {
+                document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        function toggleColumn(columnName) {
+            const badge = document.querySelector(`[data-column="${columnName}"]`);
+            
+            if (activeColumns.has(columnName)) {
+                activeColumns.delete(columnName);
+                badge.classList.remove('active');
+                badge.classList.add('inactive');
+                
+                const headers = document.querySelectorAll(`th[data-column="${columnName}"]`);
+                const cells = document.querySelectorAll(`td[data-column="${columnName}"]`);
+                
+                headers.forEach(h => h.classList.add('hidden'));
+                cells.forEach(c => c.classList.add('hidden'));
+            } else {
+                activeColumns.add(columnName);
+                badge.classList.remove('inactive');
+                badge.classList.add('active');
+                
+                const headers = document.querySelectorAll(`th[data-column="${columnName}"]`);
+                const cells = document.querySelectorAll(`td[data-column="${columnName}"]`);
+                
+                headers.forEach(h => h.classList.remove('hidden'));
+                cells.forEach(c => c.classList.remove('hidden'));
+            }
+        }
+
+        // ===== EXTRACTION FLOW =====
+        async function prepareExtraction() {
+            // DEMO MODE - Skip backend, go straight to list name
+            showListNameModal();
+        }
+
+        function showListNameModal() {
+            document.getElementById('listNameModal').classList.add('active');
+        }
+
+        function closeListNameModal() {
+            document.getElementById('listNameModal').classList.remove('active');
+        }
+
+        async function confirmListName() {
+            const listName = document.getElementById('newListName').value.trim();
+            
+            if (!listName) {
+                alert('Please enter a list name');
+                return;
+            }
+            
+            closeListNameModal();
+            
+            // DEMO MODE - Just start extraction
+            selectedListId = 1;
+            startExtraction();
+        }
+
+        function startExtraction() {
+            document.getElementById('progressSection').classList.add('active');
+            document.getElementById('actionButtons').innerHTML = `
+                <button class="btn btn-secondary" disabled style="opacity: 0.5; cursor: not-allowed;">Processing...</button>
+            `;
+
+            // DEMO MODE - Simulate extraction
+            simulateExtraction();
+        }
+
+        // Simulate extraction for demo
+        function simulateExtraction() {
+            let completed = 0;
+            let current = 0;
+            const total = parsedData.length;
+            
+            const interval = setInterval(() => {
+                if (current >= total) {
+                    clearInterval(interval);
+                    return;
+                }
+                
+                // Mark current row as processing
+                updateRow(current, {
+                    status: 'processing'
+                });
+                
+                // Simulate completion after 500ms
+                setTimeout(() => {
+                    const hasError = Math.random() < 0.05; // 5% error rate
+                    
+                    if (hasError) {
+                        updateRow(current, {
+                            status: 'error'
+                        });
+                    } else {
+                        updateRow(current, {
+                            status: 'completed',
+                            latitude: (9.4 + Math.random() * 0.2).toFixed(7),
+                            longitude: (100.0 + Math.random() * 0.1).toFixed(7),
+                            address: 'Sample Address, Thailand 84310'
+                        });
+                    }
+                    
+                    completed++;
+                    const errors = document.querySelectorAll('.row-status.error').length;
+                    updateProgress(completed, 0, errors, total);
+                    
+                    // When complete
+                    if (completed === total) {
+                        document.getElementById('progressTitle').innerHTML = '✓ Extraction Complete!';
+                        document.getElementById('actionButtons').innerHTML = `
+                            <button class="btn btn-secondary" onclick="showDemoDashboard()">View Dashboard</button>
+                            <button class="btn btn-primary" onclick="location.reload()">Upload Another File</button>
+                        `;
+                    }
+                }, 500);
+                
+                current++;
+                const errors = document.querySelectorAll('.row-status.error').length;
+                updateProgress(completed, 1, errors, total);
+                
+            }, 600);
+        }
+
+        function updateRow(index, data) {
+            const { latitude, longitude, address, status } = data;
+            
+            const statusEl = document.getElementById(`status-${index}`);
+            if (statusEl) {
+                statusEl.innerHTML = `<span class="row-status ${status}"></span>`;
+            }
+            
+            const latEl = document.getElementById(`lat-${index}`);
+            if (latEl && latitude) {
+                latEl.textContent = latitude;
+                latEl.className = 'new-column completed';
+            } else if (latEl && status === 'error') {
+                latEl.className = 'new-column error';
+                latEl.textContent = 'Error';
+            }
+            
+            const lngEl = document.getElementById(`lng-${index}`);
+            if (lngEl && longitude) {
+                lngEl.textContent = longitude;
+                lngEl.className = 'new-column completed';
+            } else if (lngEl && status === 'error') {
+                lngEl.className = 'new-column error';
+                lngEl.textContent = 'Error';
+            }
+            
+            const addrEl = document.getElementById(`addr-${index}`);
+            if (addrEl && address) {
+                addrEl.textContent = address;
+                addrEl.title = address;
+                addrEl.className = 'new-column completed';
+            } else if (addrEl && status === 'error') {
+                addrEl.className = 'new-column error';
+                addrEl.textContent = 'Error';
+            }
+        }
+
+        function updateProgress(completed, processing, errors, total) {
+            const percentage = Math.round((completed / total) * 100);
+            
+            document.getElementById('progressBar').style.width = `${percentage}%`;
+            document.getElementById('progressStats').textContent = `${completed} / ${total} (${percentage}%)`;
+            document.getElementById('completedCount').textContent = completed;
+            document.getElementById('processingCount').textContent = processing;
+            document.getElementById('errorCount').textContent = errors;
+            document.getElementById('remainingCount').textContent = total - completed - errors;
+        }
+
+        async function downloadResults() {
+            alert('Download feature requires backend');
+        }
+
+        // Demo Dashboard
+        function showDemoDashboard() {
+            document.getElementById('uploadSection').classList.remove('active');
+            document.getElementById('profileSection').classList.remove('active');
+            document.getElementById('dashboard').classList.add('active');
+            
+            // Update active nav button
+            document.getElementById('navDashboard').classList.add('active');
+            document.getElementById('navUpload').classList.remove('active');
+            document.getElementById('navProfile').classList.remove('active');
+            
+            // Show some fake lists for demo
+            const listName = document.getElementById('newListName')?.value;
+            const demoLists = [];
+            
+            // If user created a list, show it first
+            if (listName && parsedData) {
+                demoLists.push({
+                    id: 1, 
+                    name: listName, 
+                    location_count: parsedData.length, 
+                    updated_at: new Date().toISOString()
+                });
+            }
+            
+            // Add example lists
+            demoLists.push(
+                { id: 2, name: 'Thailand Trip 2025', location_count: 107, updated_at: '2025-01-10T10:00:00' },
+                { id: 3, name: 'Japan Planning', location_count: 45, updated_at: '2025-01-05T15:30:00' },
+                { id: 4, name: 'Europe Tour', location_count: 82, updated_at: '2024-12-20T09:15:00' }
+            );
+            
+            renderLists(demoLists);
+        }
+
+        function showUploadFromDashboard() {
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('profileSection').classList.remove('active');
+            document.getElementById('uploadSection').classList.add('active');
+            
+            // Update active nav button
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navUpload').classList.add('active');
+            document.getElementById('navProfile').classList.remove('active');
+        }
+
+        function showDashboard() {
+            showDemoDashboard();
+        }
+
+        function showUpload() {
+            showUploadFromDashboard();
+        }
+
+        function showProfile() {
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('uploadSection').classList.remove('active');
+            document.getElementById('profileSection').classList.add('active');
+            
+            // Update active nav button
+            document.getElementById('navDashboard').classList.remove('active');
+            document.getElementById('navUpload').classList.remove('active');
+            document.getElementById('navProfile').classList.add('active');
+        }
+
+        function handleDeleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone!')) {
+                if (confirm('This will permanently delete all your lists and locations. Are you absolutely sure?')) {
+                    alert('Account deleted! (Demo mode - not actually deleted)');
+                    // In real app, would call API and redirect to login
+                }
+            }
+        }
+
+        function toggleEditAccount() {
+            const viewMode = document.getElementById('accountInfoView');
+            const editMode = document.getElementById('accountInfoEdit');
+            const editBtn = document.getElementById('editAccountBtn');
+            
+            if (accountInfoEditMode) {
+                // Cancel editing
+                cancelEditAccount();
+            } else {
+                // Start editing
+                accountInfoEditMode = true;
+                viewMode.style.display = 'none';
+                editMode.style.display = 'block';
+                editBtn.textContent = 'Cancel';
+                editBtn.style.color = 'var(--error)';
+                
+                // Populate form with current values
+                document.getElementById('firstNameEdit').value = document.getElementById('firstNameDisplay').textContent;
+                document.getElementById('lastNameEdit').value = document.getElementById('lastNameDisplay').textContent;
+            }
+        }
+
+        function cancelEditAccount() {
+            const viewMode = document.getElementById('accountInfoView');
+            const editMode = document.getElementById('accountInfoEdit');
+            const editBtn = document.getElementById('editAccountBtn');
+            
+            accountInfoEditMode = false;
+            viewMode.style.display = 'block';
+            editMode.style.display = 'none';
+            editBtn.textContent = 'Edit';
+            editBtn.style.color = 'var(--primary)';
+        }
+
+        function saveAccountInfo(event) {
+            event.preventDefault();
+            
+            const firstName = document.getElementById('firstNameEdit').value.trim();
+            const lastName = document.getElementById('lastNameEdit').value.trim();
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmNewPassword').value;
+            
+            // Validate password if provided
+            if (newPassword || confirmPassword) {
+                if (newPassword !== confirmPassword) {
+                    alert('Passwords do not match!');
+                    return;
+                }
+                if (newPassword.length < 6) {
+                    alert('Password must be at least 6 characters');
+                    return;
+                }
+            }
+            
+            // Update display
+            document.getElementById('firstNameDisplay').textContent = firstName;
+            document.getElementById('lastNameDisplay').textContent = lastName;
+            
+            // Update avatar with new first name initial
+            document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
+            
+            // Demo mode success message
+            let message = 'Account information updated successfully!';
+            if (newPassword) {
+                message = 'Account information and password updated successfully!';
+                // Clear password fields
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmNewPassword').value = '';
+            }
+            alert(message + ' (Demo mode)');
+            
+            // Exit edit mode
+            cancelEditAccount();
+        }
+
+
+        function handleDeleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone!')) {
+                if (confirm('This will permanently delete all your lists and locations. Are you absolutely sure?')) {
+                    alert('Account deleted! (Demo mode - not actually deleted)');
+                    // In real app, would call API and redirect to login
+                }
+            }
+        }
+    </script>
+</body>
+</html>
