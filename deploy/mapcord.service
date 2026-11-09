@@ -1,0 +1,16 @@
+[Unit]
+Description=MapCord (Google Maps coordinate extractor)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Change "pi" below if your Pi username is different (check with: whoami)
+User=pi
+WorkingDirectory=/home/pi/Google_Save_Conversion
+ExecStart=/home/pi/Google_Save_Conversion/venv/bin/python app.py
+Environment=PORT=5000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

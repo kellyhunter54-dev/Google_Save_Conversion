@@ -1,0 +1,8 @@
+# Created on the Pi when the app runs. Never commit these.
+mapcord.db
+mapcord.db-*
+secret_key.txt
+venv/
+__pycache__/
+*.pyc
+*_with_coords.csv

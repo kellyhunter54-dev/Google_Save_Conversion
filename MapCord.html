@@ -1176,7 +1176,7 @@
         /* Progress Section */
         .progress-section {
             display: none;
-            margin-top: 2rem;
+            margin-bottom: 2rem;
             padding: 2rem;
             background: linear-gradient(135deg, rgba(0,102,255,0.03), rgba(0,217,255,0.03));
             border-radius: 12px;
@@ -1293,7 +1293,7 @@
     </style>
 </head>
 <body>
-    <header id="mainHeader">
+    <header id="mainHeader" style="display: none;">
         <div class="header-content">
             <div class="logo-section">
                 <span class="logo-icon"></span>
@@ -1311,14 +1311,14 @@
                         Account
                     </button>
                 </div>
-                <div class="user-avatar" id="userAvatar" onclick="showProfile()" title="Account Settings">D</div>
+                <div class="user-avatar" id="userAvatar" onclick="showProfile()" title="Account Settings">?</div>
             </div>
         </div>
     </header>
 
     <main>
         <!-- Login Page -->
-        <div class="auth-container" id="loginPage" style="display: none;">
+        <div class="auth-container" id="loginPage">
             <h1 class="auth-title">Welcome Back</h1>
             <p class="auth-subtitle">Sign in to your account</p>
             
@@ -1408,26 +1408,26 @@
                     <div id="accountInfoView">
                         <div class="info-row">
                             <span class="info-label">First Name</span>
-                            <span class="info-value" id="firstNameDisplay">Demo</span>
+                            <span class="info-value" id="firstNameDisplay"></span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Last Name</span>
-                            <span class="info-value" id="lastNameDisplay">User</span>
+                            <span class="info-value" id="lastNameDisplay"></span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Email Address</span>
-                            <span class="info-value">demo@example.com</span>
+                            <span class="info-value" id="emailDisplay"></span>
                         </div>
                     </div>
 
                     <form id="accountInfoEdit" style="display: none;" onsubmit="saveAccountInfo(event)">
                         <div class="form-group">
                             <label class="form-label">First Name</label>
-                            <input type="text" class="form-input" id="firstNameEdit" value="Demo" required>
+                            <input type="text" class="form-input" id="firstNameEdit">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Last Name</label>
-                            <input type="text" class="form-input" id="lastNameEdit" value="User" required>
+                            <input type="text" class="form-input" id="lastNameEdit">
                         </div>
                         
                         <div style="border-top: 1px solid var(--border); margin: 1.5rem -2rem 1.5rem -2rem; padding: 1.5rem 2rem 0 2rem;">
@@ -1458,15 +1458,15 @@
                     <h3 class="settings-card-title">Statistics</h3>
                     <div class="stats-grid">
                         <div class="stat-item">
-                            <div class="stat-value">4</div>
+                            <div class="stat-value" id="statLists">0</div>
                             <div class="stat-label">Total Lists</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">341</div>
+                            <div class="stat-value" id="statLocations">0</div>
                             <div class="stat-label">Total Locations</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">Jan 2025</div>
+                            <div class="stat-value" id="statSince">-</div>
                             <div class="stat-label">Member Since</div>
                         </div>
                     </div>
@@ -1486,6 +1486,11 @@
                     </div>
                 </div>
 
+                <div class="settings-card">
+                    <h3 class="settings-card-title">Session</h3>
+                    <button class="btn btn-secondary" style="width: auto;" onclick="logout()">Sign Out</button>
+                </div>
+
                 <div class="settings-card danger-zone">
                     <h3 class="settings-card-title">Danger Zone</h3>
                     <p style="color: var(--text-secondary); margin-bottom: 1rem;">Once you delete your account, there is no going back. All your lists and locations will be permanently deleted.</p>
@@ -1496,10 +1501,10 @@
 
         <!-- Upload Section -->
         <div class="upload-section" id="uploadSection">
-            <h1 class="page-title">Upload File</h1>
-            <p class="page-description">Upload your CSV or Excel file with Google Maps URLs</p>
+            <h1 class="page-title" id="uploadTitle">Upload File</h1>
+            <p class="page-description" id="uploadDescription">Upload your Google Maps saved places export (CSV or Excel). Each place is opened on Google Maps to get its exact location, so it takes about 3 to 5 seconds per place. You can leave this page and come back; your list keeps processing.</p>
 
-            <div class="upload-container">
+            <div class="upload-container" id="uploadContainer">
                 <div class="dropzone" id="dropzone">
                     <div class="dropzone-content">
                         <div class="upload-icon">📍</div>
@@ -1533,23 +1538,8 @@
                     </div>
                 </div>
 
-                <div class="columns-section">
-                    <h3 class="section-title">Detected Columns</h3>
-                    <div class="columns-grid" id="columnsGrid"></div>
-                </div>
-
-                <div class="data-preview">
-                    <h3 class="section-title">Data Preview</h3>
-                    <div class="preview-table-container">
-                        <table class="preview-table" id="previewTable">
-                            <thead id="tableHead"></thead>
-                            <tbody id="tableBody"></tbody>
-                        </table>
-                    </div>
-                    <div class="row-count" id="rowCount"></div>
-                </div>
-
                 <div class="progress-section" id="progressSection">
+                    <div id="progressNote" style="display: none; margin-bottom: 1rem; color: var(--warning); font-weight: 500;"></div>
                     <div class="progress-header">
                         <div class="progress-title" id="progressTitle">
                             Extracting Coordinates
@@ -1578,6 +1568,22 @@
                             <div class="progress-stat-label">Remaining</div>
                         </div>
                     </div>
+                </div>
+
+                <div class="columns-section" id="columnsSection">
+                    <h3 class="section-title">Detected Columns</h3>
+                    <div class="columns-grid" id="columnsGrid"></div>
+                </div>
+
+                <div class="data-preview">
+                    <h3 class="section-title">Data Preview</h3>
+                    <div class="preview-table-container">
+                        <table class="preview-table" id="previewTable">
+                            <thead id="tableHead"></thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="row-count" id="rowCount"></div>
                 </div>
 
                 <div class="action-buttons" id="actionButtons"></div>
@@ -1618,303 +1624,343 @@
     </div>
 
     <footer>
-        <p>Powered by Selenium • Built with ❤️</p>
+        <p>Maps Coordinate Extractor</p>
     </footer>
 
-    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
         // ===== CONFIGURATION =====
-        // TODO: Change this to your Raspberry Pi address
-        const API_BASE = 'http://localhost:5000';  // Change to your Pi's IP or domain
-        
+        // Empty = same server that serves this page (the Pi). Only change this if the
+        // website is hosted somewhere else, e.g. 'https://maps.yourdomain.com'
+        const API_BASE = '';
+        const POLL_MS = 2000;
+        const SECONDS_PER_PLACE = 5;   // used only for the time estimate
+
         // ===== GLOBAL STATE =====
         let currentUser = null;
-        let uploadedFile = null;
-        let parsedData = null;
+        let parsedData = null;       // rows from the uploaded file
+        let columns = [];
         let activeColumns = new Set();
-        let socket = null;
-        let selectedListId = null;
-        let matchingResults = null;
+        let titleCol = null;
+        let urlCol = null;
+        let currentListId = null;    // list being shown / tracked
+        let pollTimer = null;
         let accountInfoEditMode = false;
 
-        // ===== DARK MODE =====
-        function toggleTheme() {
-            const html = document.documentElement;
-            const themeToggle = document.getElementById('themeToggle');
-            
-            if (themeToggle.checked) {
-                html.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                html.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
-            }
+        // ===== HELPERS =====
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
         }
 
-        // Load saved theme on page load
-        function loadTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            const themeToggle = document.getElementById('themeToggle');
-            
-            if (savedTheme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                if (themeToggle) {
-                    themeToggle.checked = true;
-                }
+        async function api(path, options = {}) {
+            const opts = { credentials: 'include', ...options };
+            if (opts.body && typeof opts.body !== 'string') {
+                opts.headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+                opts.body = JSON.stringify(opts.body);
             }
-        }
-
-        // ===== INITIALIZATION =====
-        document.addEventListener('DOMContentLoaded', () => {
-            // Load theme preference
-            loadTheme();
-            
-            // DEMO MODE - Show dashboard by default
-            const email = 'demo@example.com';
-            const firstLetter = email.charAt(0).toUpperCase();
-            document.getElementById('userAvatar').textContent = firstLetter;
-            document.getElementById('loginPage').classList.remove('active');
-            showDemoDashboard();
-            setupFileUpload();
-        });
-
-        // ===== AUTHENTICATION =====
-        async function checkAuth() {
+            let response;
             try {
-                const response = await fetch(`${API_BASE}/api/check-auth`, {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-                
-                if (data.authenticated) {
-                    currentUser = data.email;
-                    showDashboard();
-                    loadLists();
-                } else {
-                    showLogin();
-                }
-            } catch (error) {
-                console.error('Auth check failed:', error);
+                response = await fetch(`${API_BASE}${path}`, opts);
+            } catch (e) {
+                throw new Error('Could not reach the server. Please check your connection.');
+            }
+            let data = {};
+            try { data = await response.json(); } catch (e) { /* non-JSON */ }
+            if (response.status === 401 && !path.startsWith('/api/login') && !path.startsWith('/api/register')) {
+                currentUser = null;
                 showLogin();
             }
-        }
-
-        async function handleLogin(event) {
-            event.preventDefault();
-            
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ email, password })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    currentUser = data.email;
-                    showDashboard();
-                    loadLists();
-                } else {
-                    showError('loginError', data.error);
-                }
-            } catch (error) {
-                showError('loginError', 'Connection error. Please check your network.');
+            if (!response.ok) {
+                throw new Error(data.error || `Request failed (${response.status})`);
             }
-        }
-
-        async function handleRegister(event) {
-            event.preventDefault();
-            
-            const email = document.getElementById('registerEmail').value;
-            const password = document.getElementById('registerPassword').value;
-            const confirmPassword = document.getElementById('registerPasswordConfirm').value;
-            
-            if (password !== confirmPassword) {
-                showError('registerError', 'Passwords do not match');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/api/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ email, password })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    currentUser = data.email;
-                    showDashboard();
-                    loadLists();
-                } else {
-                    showError('registerError', data.error);
-                }
-            } catch (error) {
-                showError('registerError', 'Connection error. Please check your network.');
-            }
-        }
-
-        async function logout() {
-            try {
-                await fetch(`${API_BASE}/api/logout`, {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-            } catch (error) {
-                console.error('Logout error:', error);
-            }
-            
-            currentUser = null;
-            showLogin();
+            return data;
         }
 
         function showError(elementId, message) {
             const errorEl = document.getElementById(elementId);
             errorEl.textContent = message;
             errorEl.style.display = 'block';
-            setTimeout(() => {
-                errorEl.style.display = 'none';
-            }, 5000);
+            setTimeout(() => { errorEl.style.display = 'none'; }, 5000);
+        }
+
+        function stopPolling() {
+            if (pollTimer) {
+                clearTimeout(pollTimer);
+                pollTimer = null;
+            }
+        }
+
+        function formatDuration(seconds) {
+            if (seconds < 60) return 'under a minute';
+            const mins = Math.round(seconds / 60);
+            if (mins < 60) return `about ${mins} minute${mins === 1 ? '' : 's'}`;
+            const hrs = Math.floor(mins / 60);
+            const rem = mins % 60;
+            return `about ${hrs} hr${rem ? ` ${rem} min` : ''}`;
+        }
+
+        // ===== DARK MODE =====
+        function toggleTheme() {
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle.checked) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                try { localStorage.setItem('theme', 'dark'); } catch (e) {}
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                try { localStorage.setItem('theme', 'light'); } catch (e) {}
+            }
+        }
+
+        function loadTheme() {
+            let savedTheme = null;
+            try { savedTheme = localStorage.getItem('theme'); } catch (e) {}
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                const themeToggle = document.getElementById('themeToggle');
+                if (themeToggle) themeToggle.checked = true;
+            }
+        }
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            setupFileUpload();
+            checkAuth();
+        });
+
+        // ===== AUTHENTICATION =====
+        function setUser(data) {
+            currentUser = data;
+            const initial = (data.first_name || data.email || '?').charAt(0).toUpperCase();
+            document.getElementById('userAvatar').textContent = initial;
+            document.getElementById('firstNameDisplay').textContent = data.first_name || '-';
+            document.getElementById('lastNameDisplay').textContent = data.last_name || '-';
+            document.getElementById('emailDisplay').textContent = data.email;
+            document.getElementById('statLists').textContent = data.total_lists ?? 0;
+            document.getElementById('statLocations').textContent = data.total_locations ?? 0;
+            if (data.created_at) {
+                document.getElementById('statSince').textContent =
+                    new Date(data.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+            }
+        }
+
+        async function refreshUser() {
+            try {
+                const data = await api('/api/check-auth');
+                if (data.authenticated) setUser(data);
+            } catch (e) { /* ignore */ }
+        }
+
+        async function checkAuth() {
+            try {
+                const data = await api('/api/check-auth');
+                if (data.authenticated) {
+                    setUser(data);
+                    showDashboard();
+                } else {
+                    showLogin();
+                }
+            } catch (error) {
+                showLogin();
+                showError('loginError', error.message);
+            }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            try {
+                const data = await api('/api/login', {
+                    method: 'POST',
+                    body: {
+                        email: document.getElementById('loginEmail').value,
+                        password: document.getElementById('loginPassword').value
+                    }
+                });
+                setUser(data);
+                document.getElementById('loginPassword').value = '';
+                showDashboard();
+            } catch (error) {
+                showError('loginError', error.message);
+            }
+        }
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            const password = document.getElementById('registerPassword').value;
+            if (password !== document.getElementById('registerPasswordConfirm').value) {
+                showError('registerError', 'Passwords do not match');
+                return;
+            }
+            try {
+                const data = await api('/api/register', {
+                    method: 'POST',
+                    body: { email: document.getElementById('registerEmail').value, password }
+                });
+                setUser(data);
+                document.getElementById('registerPassword').value = '';
+                document.getElementById('registerPasswordConfirm').value = '';
+                showDashboard();
+            } catch (error) {
+                showError('registerError', error.message);
+            }
+        }
+
+        async function logout() {
+            stopPolling();
+            try { await api('/api/logout', { method: 'POST' }); } catch (e) {}
+            currentUser = null;
+            showLogin();
         }
 
         // ===== PAGE NAVIGATION =====
+        function hideAllSections() {
+            stopPolling();
+            ['loginPage', 'registerPage', 'dashboard', 'profileSection', 'uploadSection']
+                .forEach(id => document.getElementById(id).classList.remove('active'));
+        }
+
+        function setActiveNav(id) {
+            ['navDashboard', 'navUpload', 'navProfile'].forEach(n =>
+                document.getElementById(n).classList.toggle('active', n === id));
+        }
+
         function showLogin() {
+            hideAllSections();
             document.getElementById('mainHeader').style.display = 'none';
             document.getElementById('loginPage').classList.add('active');
-            document.getElementById('registerPage').classList.remove('active');
-            document.getElementById('dashboard').classList.remove('active');
-            document.getElementById('uploadSection').classList.remove('active');
         }
 
         function showRegister() {
+            hideAllSections();
             document.getElementById('mainHeader').style.display = 'none';
-            document.getElementById('loginPage').classList.remove('active');
             document.getElementById('registerPage').classList.add('active');
-            document.getElementById('dashboard').classList.remove('active');
-            document.getElementById('uploadSection').classList.remove('active');
         }
 
         function showDashboard() {
+            hideAllSections();
             document.getElementById('mainHeader').style.display = 'block';
-            document.getElementById('userEmail').textContent = currentUser;
-            document.getElementById('loginPage').classList.remove('active');
-            document.getElementById('registerPage').classList.remove('active');
             document.getElementById('dashboard').classList.add('active');
-            document.getElementById('uploadSection').classList.remove('active');
+            setActiveNav('navDashboard');
+            loadLists();
         }
+
+        function showUpload() {
+            hideAllSections();
+            document.getElementById('mainHeader').style.display = 'block';
+            document.getElementById('uploadSection').classList.add('active');
+            setActiveNav('navUpload');
+            resetUploadView();
+        }
+
+        function showProfile() {
+            hideAllSections();
+            document.getElementById('mainHeader').style.display = 'block';
+            document.getElementById('profileSection').classList.add('active');
+            setActiveNav('navProfile');
+            refreshUser();
+        }
+
+        // The nav buttons in the header call these names
+        function showDemoDashboard() { showDashboard(); }
+        function showUploadFromDashboard() { showUpload(); }
 
         // ===== DASHBOARD =====
         async function loadLists() {
+            const container = document.getElementById('listsContainer');
             document.getElementById('dashboardLoading').classList.add('active');
-            document.getElementById('listsContainer').innerHTML = '';
-            
+            container.innerHTML = '';
             try {
-                const response = await fetch(`${API_BASE}/api/lists`, {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-                
+                const data = await api('/api/lists');
                 document.getElementById('dashboardLoading').classList.remove('active');
-                
                 if (data.lists && data.lists.length > 0) {
                     renderLists(data.lists);
                 } else {
                     renderEmptyState();
                 }
+                // Keep cards updating while something is still processing
+                if (data.lists && data.lists.some(l => l.pending_count > 0)) {
+                    pollTimer = setTimeout(() => {
+                        if (document.getElementById('dashboard').classList.contains('active')) loadLists();
+                    }, 5000);
+                }
             } catch (error) {
-                console.error('Error loading lists:', error);
                 document.getElementById('dashboardLoading').classList.remove('active');
-                document.getElementById('listsContainer').innerHTML = '<p style="text-align: center; color: var(--error);">Error loading lists</p>';
+                container.innerHTML = `<p style="text-align: center; color: var(--error);">${escapeHtml(error.message)}</p>`;
             }
         }
 
         function renderLists(lists) {
             const container = document.getElementById('listsContainer');
+            container.innerHTML = '';
             const grid = document.createElement('div');
             grid.className = 'lists-grid';
-            
+
             lists.forEach(list => {
                 const card = document.createElement('div');
                 card.className = 'list-card';
                 card.onclick = () => viewList(list.id);
-                
+                const processing = list.pending_count > 0
+                    ? `<div class="list-stat" style="color: var(--warning);"><span>⏳</span><span>${list.pending_count} left to process</span></div>`
+                    : '';
                 card.innerHTML = `
                     <div class="list-card-header">
-                        <div class="list-name">${list.name}</div>
+                        <div class="list-name">${escapeHtml(list.name)}</div>
                         <div class="list-menu">
-                            <button class="list-menu-btn" onclick="event.stopPropagation(); showListMenu(${list.id}, '${list.name}', event)">⋮</button>
+                            <button class="list-menu-btn">⋮</button>
                         </div>
                     </div>
                     <div class="list-stats">
-                        <div class="list-stat">
-                            <span>📍</span>
-                            <span>${list.location_count} locations</span>
-                        </div>
-                        <div class="list-stat">
-                            <span>📅</span>
-                            <span>${new Date(list.updated_at).toLocaleDateString()}</span>
-                        </div>
+                        <div class="list-stat"><span>📍</span><span>${list.location_count} locations</span></div>
+                        <div class="list-stat"><span>📅</span><span>${new Date(list.updated_at).toLocaleDateString()}</span></div>
+                        ${processing}
                     </div>
                 `;
-                
+                card.querySelector('.list-menu-btn').onclick = (event) => {
+                    event.stopPropagation();
+                    showListMenu(list, event);
+                };
                 grid.appendChild(card);
             });
-            
             container.appendChild(grid);
         }
 
         function renderEmptyState() {
-            const container = document.getElementById('listsContainer');
-            container.innerHTML = `
+            document.getElementById('listsContainer').innerHTML = `
                 <div class="empty-state">
                     <div class="empty-state-icon">📂</div>
                     <div class="empty-state-title">No lists yet</div>
                     <div class="empty-state-text">Upload your first file to get started</div>
-                    <button class="btn btn-primary" onclick="showUpload()">Upload File</button>
+                    <button class="btn btn-primary" style="width: auto;" onclick="showUpload()">Upload File</button>
                 </div>
             `;
         }
 
-        function showListMenu(listId, listName, event) {
-            // Close any existing menus
-            const existingMenu = document.querySelector('.list-dropdown-menu');
-            if (existingMenu) {
-                existingMenu.remove();
-            }
-            
-            // Create dropdown menu
+        function showListMenu(list, event) {
+            document.querySelector('.list-dropdown-menu')?.remove();
+
             const dropdown = document.createElement('div');
             dropdown.className = 'list-dropdown-menu';
-            dropdown.innerHTML = `
-                <div class="dropdown-item" onclick="event.stopPropagation(); renameListPrompt(${listId}, '${listName}')">
-                    <span>Rename</span>
-                </div>
-                <div class="dropdown-item danger" onclick="event.stopPropagation(); deleteListPrompt(${listId}, '${listName}')">
-                    <span>Delete</span>
-                </div>
-            `;
-            
-            // Position dropdown
-            const button = event.target.closest('.list-menu-btn');
-            const card = button.closest('.list-card');
+            const items = [
+                ['Download CSV', () => downloadList(list.id), ''],
+                ['Rename', () => renameListPrompt(list), ''],
+                ['Delete', () => deleteListPrompt(list), 'danger'],
+            ];
+            items.forEach(([label, action, cls]) => {
+                const item = document.createElement('div');
+                item.className = `dropdown-item ${cls}`;
+                item.innerHTML = `<span>${label}</span>`;
+                item.onclick = (e) => { e.stopPropagation(); dropdown.remove(); action(); };
+                dropdown.appendChild(item);
+            });
+
+            const card = event.target.closest('.list-card');
             card.style.position = 'relative';
-            dropdown.style.position = 'absolute';
-            dropdown.style.top = '3rem';
-            dropdown.style.right = '1rem';
-            dropdown.style.zIndex = '100';
-            
+            Object.assign(dropdown.style, { position: 'absolute', top: '3rem', right: '1rem', zIndex: '100' });
             card.appendChild(dropdown);
-            
-            // Close menu when clicking outside
+
             setTimeout(() => {
                 document.addEventListener('click', function closeMenu(e) {
                     if (!dropdown.contains(e.target)) {
@@ -1925,66 +1971,44 @@
             }, 0);
         }
 
-        function renameListPrompt(listId, listName) {
-            // Close dropdown
-            document.querySelector('.list-dropdown-menu')?.remove();
-            
-            const newName = prompt('Enter new name:', listName);
-            if (newName && newName.trim()) {
-                renameList(listId, newName.trim());
-            }
-        }
-
-        function deleteListPrompt(listId, listName) {
-            // Close dropdown
-            document.querySelector('.list-dropdown-menu')?.remove();
-            
-            if (confirm(`Delete list "${listName}"? This cannot be undone.`)) {
-                deleteList(listId);
-            }
-        }
-
-        async function renameList(listId, newName) {
+        async function renameListPrompt(list) {
+            const newName = prompt('Enter new name:', list.name);
+            if (!newName || !newName.trim()) return;
             try {
-                const response = await fetch(`${API_BASE}/api/lists/${listId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ name: newName })
-                });
-                
-                if (response.ok) {
-                    loadLists();
-                } else {
-                    alert('Error renaming list');
-                }
+                await api(`/api/lists/${list.id}`, { method: 'PUT', body: { name: newName.trim() } });
+                loadLists();
             } catch (error) {
-                console.error('Error renaming list:', error);
-                alert('Error renaming list');
+                alert(error.message);
             }
         }
 
-        async function deleteList(listId) {
+        async function deleteListPrompt(list) {
+            if (!confirm(`Delete list "${list.name}"? This cannot be undone.`)) return;
             try {
-                const response = await fetch(`${API_BASE}/api/lists/${listId}`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                });
-                
-                if (response.ok) {
-                    loadLists();
-                } else {
-                    alert('Error deleting list');
-                }
+                await api(`/api/lists/${list.id}`, { method: 'DELETE' });
+                stopPolling();
+                loadLists();
+                refreshUser();
             } catch (error) {
-                console.error('Error deleting list:', error);
-                alert('Error deleting list');
+                alert(error.message);
             }
         }
 
+        function downloadList(listId) {
+            window.location.href = `${API_BASE}/api/lists/${listId}/download`;
+        }
+
+        // Open a saved list: shows its results, and live progress if it's still running
         function viewList(listId) {
-            alert('View list details - Coming soon!');
-            // TODO: Show list details and locations
+            hideAllSections();
+            document.getElementById('mainHeader').style.display = 'block';
+            document.getElementById('uploadSection').classList.add('active');
+            setActiveNav('navDashboard');
+            resetUploadView();
+            document.getElementById('uploadContainer').style.display = 'none';
+            document.getElementById('uploadTitle').textContent = 'Loading list...';
+            document.getElementById('uploadDescription').textContent = '';
+            trackList(listId);
         }
 
         // ===== FILE UPLOAD =====
@@ -1993,71 +2017,84 @@
             const fileInput = document.getElementById('fileInput');
 
             dropzone.addEventListener('click', (e) => {
-                if (e.target.classList.contains('upload-button') || e.target.closest('.upload-button')) {
-                    return;
-                }
+                if (e.target.closest('.upload-button')) return;
                 fileInput.click();
             });
-
             dropzone.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 dropzone.classList.add('dragover');
             });
-
-            dropzone.addEventListener('dragleave', () => {
-                dropzone.classList.remove('dragover');
-            });
-
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
             dropzone.addEventListener('drop', (e) => {
                 e.preventDefault();
                 dropzone.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    handleFile(files[0]);
-                }
+                if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
             });
-
             fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    handleFile(e.target.files[0]);
-                }
+                if (e.target.files.length > 0) handleFile(e.target.files[0]);
+                fileInput.value = '';   // lets the same file be chosen again
             });
         }
 
-        function handleFile(file) {
-            uploadedFile = file;
-            const extension = file.name.split('.').pop().toLowerCase();
+        function resetUploadView() {
+            parsedData = null;
+            currentListId = null;
+            document.getElementById('uploadTitle').textContent = 'Upload File';
+            document.getElementById('uploadDescription').textContent =
+                'Upload your Google Maps saved places export (CSV or Excel). Each place is opened on Google Maps to get its exact location, so it takes about 3 to 5 seconds per place. You can leave this page and come back; your list keeps processing.';
+            document.getElementById('uploadContainer').style.display = 'block';
+            document.getElementById('previewSection').classList.remove('active');
+            document.getElementById('progressSection').classList.remove('active');
+            document.getElementById('matchInfo').style.display = 'none';
+            document.getElementById('columnsSection').style.display = 'block';
+            document.getElementById('progressNote').style.display = 'none';
+            document.getElementById('tableHead').innerHTML = '';
+            document.getElementById('tableBody').innerHTML = '';
+            document.getElementById('actionButtons').innerHTML = '';
+        }
 
+        function handleFile(file) {
+            const extension = file.name.split('.').pop().toLowerCase();
             if (!['csv', 'xlsx', 'xls'].includes(extension)) {
                 alert('Please upload a CSV, XLSX, or XLS file');
                 return;
             }
-
-            // Parse file
+            const reader = new FileReader();
             if (extension === 'csv') {
-                const reader = new FileReader();
                 reader.onload = (e) => {
                     Papa.parse(e.target.result, {
                         header: true,
+                        skipEmptyLines: true,
                         complete: (results) => {
-                            parsedData = results.data.filter(row => Object.values(row).some(val => val));
+                            parsedData = results.data.filter(row => Object.values(row).some(v => String(v ?? '').trim()));
                             displayPreview();
                         }
                     });
                 };
                 reader.readAsText(file);
             } else {
-                const reader = new FileReader();
                 reader.onload = (e) => {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                    parsedData = jsonData.filter(row => Object.values(row).some(val => val));
+                    const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    parsedData = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+                        .filter(row => Object.values(row).some(v => String(v ?? '').trim()));
                     displayPreview();
                 };
                 reader.readAsArrayBuffer(file);
             }
+        }
+
+        function detectColumns(cols, rows) {
+            const lower = c => String(c).toLowerCase();
+            // URL column: by name first, otherwise the column that actually holds Google Maps links
+            let url = cols.find(c => ['url', 'link', 'maps url', 'google maps url'].includes(lower(c)))
+                || cols.find(c => lower(c).includes('url') || lower(c).includes('link'))
+                || cols.find(c => rows.slice(0, 20).some(r => /google\.[^/]+\/maps|goo\.gl/i.test(String(r[c] ?? ''))));
+            const others = cols.filter(c => c !== url);
+            let title = others.find(c => ['title', 'name', 'place name', 'place'].includes(lower(c)))
+                || others.find(c => ['title', 'name', 'place'].some(k => lower(c).includes(k)))
+                || others[0];
+            return { title, url };
         }
 
         function displayPreview() {
@@ -2065,13 +2102,20 @@
                 alert('No data found in file');
                 return;
             }
+            columns = Object.keys(parsedData[0]);
+            activeColumns = new Set(columns);
+            ({ title: titleCol, url: urlCol } = detectColumns(columns, parsedData));
+
+            if (!urlCol) {
+                alert("Couldn't find a column with Google Maps links in this file.");
+                return;
+            }
 
             document.getElementById('previewSection').classList.add('active');
+            document.getElementById('progressSection').classList.remove('active');
+            document.getElementById('matchInfo').style.display = 'none';
+            document.getElementById('columnsSection').style.display = 'block';
 
-            const columns = Object.keys(parsedData[0]);
-            activeColumns = new Set(columns);
-
-            // Display column badges
             const columnsGrid = document.getElementById('columnsGrid');
             columnsGrid.innerHTML = '';
             columns.forEach(col => {
@@ -2083,114 +2127,110 @@
                 columnsGrid.appendChild(badge);
             });
 
-            // Build table
             const tableHead = document.getElementById('tableHead');
             const tableBody = document.getElementById('tableBody');
-            
-            tableHead.innerHTML = '<tr>' + 
-                '<th style="width: 40px;">●</th>' +
-                columns.map(col => `<th data-column="${col}">${col}</th>`).join('') + 
-                '<th class="new-column">Latitude</th>' +
-                '<th class="new-column">Longitude</th>' +
-                '<th class="new-column">Address</th>' +
-                '</tr>';
-            
+            tableHead.innerHTML = '<tr><th style="width: 40px;">●</th>' +
+                columns.map(col => `<th data-column="${escapeHtml(col)}">${escapeHtml(col)}</th>`).join('') +
+                '<th class="new-column">Latitude</th><th class="new-column">Longitude</th><th class="new-column">Address</th></tr>';
+
             tableBody.innerHTML = '';
-            parsedData.forEach((row, index) => {
+            parsedData.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.id = `row-${index}`;
-                
-                // Status indicator
                 const statusTd = document.createElement('td');
                 statusTd.innerHTML = '<span class="row-status pending"></span>';
-                statusTd.id = `status-${index}`;
                 tr.appendChild(statusTd);
-                
-                // Original columns
+
                 columns.forEach(col => {
                     const td = document.createElement('td');
                     td.dataset.column = col;
-                    
-                    const cellValue = row[col] || '';
-                    const isURL = cellValue.toString().toLowerCase().includes('http://') || 
-                                  cellValue.toString().toLowerCase().includes('https://') ||
-                                  cellValue.toString().toLowerCase().includes('www.');
-                    
-                    if (isURL && cellValue) {
+                    const cellValue = String(row[col] ?? '');
+                    if (/^(https?:\/\/|www\.)/i.test(cellValue.trim())) {
                         td.className = 'url-cell';
-                        const link = document.createElement('a');
-                        link.href = cellValue;
-                        link.target = '_blank';
-                        link.rel = 'noopener noreferrer';
-                        link.className = 'open-link-btn';
-                        link.textContent = 'Open';
-                        td.appendChild(link);
+                        td.appendChild(makeOpenLink(cellValue.trim()));
                     } else {
                         td.textContent = cellValue;
                         td.title = cellValue;
                     }
-                    
                     tr.appendChild(td);
                 });
-                
-                // New columns (empty)
-                ['lat', 'lng', 'addr'].forEach(prefix => {
+                for (let i = 0; i < 3; i++) {
                     const td = document.createElement('td');
                     td.className = 'new-column';
-                    td.textContent = '—';
-                    td.id = `${prefix}-${index}`;
+                    td.textContent = '-';
                     tr.appendChild(td);
-                });
-                
+                }
                 tableBody.appendChild(tr);
             });
 
-            document.getElementById('rowCount').textContent = `Total rows: ${parsedData.length}`;
+            const validRows = getUploadRows().length;
+            const estimate = formatDuration(validRows * SECONDS_PER_PLACE);
+            document.getElementById('rowCount').textContent =
+                `${parsedData.length} rows, ${validRows} with Google Maps links. Place names: "${titleCol}", links: "${urlCol}". Estimated time: ${estimate} (less if some places were looked up before).`;
 
-            // Show action buttons
-            document.getElementById('actionButtons').innerHTML = `
-                <button class="btn btn-primary" onclick="prepareExtraction()">Extract Coordinates</button>
-            `;
+            document.getElementById('actionButtons').innerHTML =
+                '<button class="btn btn-primary" style="width: auto;" onclick="prepareExtraction()">Extract Coordinates</button>';
 
             setTimeout(() => {
                 document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
             }, 100);
         }
 
+        function makeOpenLink(href) {
+            const link = document.createElement('a');
+            link.href = href;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.className = 'open-link-btn';
+            link.textContent = 'Open';
+            return link;
+        }
+
         function toggleColumn(columnName) {
-            const badge = document.querySelector(`[data-column="${columnName}"]`);
-            
-            if (activeColumns.has(columnName)) {
-                activeColumns.delete(columnName);
-                badge.classList.remove('active');
-                badge.classList.add('inactive');
-                
-                const headers = document.querySelectorAll(`th[data-column="${columnName}"]`);
-                const cells = document.querySelectorAll(`td[data-column="${columnName}"]`);
-                
-                headers.forEach(h => h.classList.add('hidden'));
-                cells.forEach(c => c.classList.add('hidden'));
-            } else {
-                activeColumns.add(columnName);
-                badge.classList.remove('inactive');
-                badge.classList.add('active');
-                
-                const headers = document.querySelectorAll(`th[data-column="${columnName}"]`);
-                const cells = document.querySelectorAll(`td[data-column="${columnName}"]`);
-                
-                headers.forEach(h => h.classList.remove('hidden'));
-                cells.forEach(c => c.classList.remove('hidden'));
-            }
+            const badge = [...document.querySelectorAll('.column-badge')].find(b => b.dataset.column === columnName);
+            const show = !activeColumns.has(columnName);
+            if (show) activeColumns.add(columnName); else activeColumns.delete(columnName);
+            badge.classList.toggle('active', show);
+            badge.classList.toggle('inactive', !show);
+            document.querySelectorAll('#previewTable [data-column]').forEach(el => {
+                if (el.dataset.column === columnName) el.classList.toggle('hidden', !show);
+            });
+        }
+
+        function getUploadRows() {
+            return (parsedData || [])
+                .map(r => ({ title: String(r[titleCol] ?? '').trim(), url: String(r[urlCol] ?? '').trim() }))
+                .filter(r => /^https?:\/\//i.test(r.url));
         }
 
         // ===== EXTRACTION FLOW =====
         async function prepareExtraction() {
-            // DEMO MODE - Skip backend, go straight to list name
-            showListNameModal();
+            const rows = getUploadRows();
+            if (rows.length === 0) {
+                alert('No Google Maps links found in this file.');
+                return;
+            }
+            try {
+                const m = await api('/api/match', { method: 'POST', body: { rows } });
+                document.getElementById('totalUploaded').textContent = m.total;
+                document.getElementById('alreadyExists').textContent = m.already_known;
+                document.getElementById('newLocations').textContent = m.new_to_process;
+                document.getElementById('matchInfo').style.display = 'block';
+
+                if (m.matching_lists.length > 0) {
+                    showChooseListModal(m.matching_lists);
+                } else {
+                    showListNameModal();
+                }
+            } catch (error) {
+                alert(error.message);
+            }
         }
 
         function showListNameModal() {
+            const input = document.getElementById('newListName');
+            input.value = '';
             document.getElementById('listNameModal').classList.add('active');
+            setTimeout(() => input.focus(), 50);
         }
 
         function closeListNameModal() {
@@ -2199,256 +2239,244 @@
 
         async function confirmListName() {
             const listName = document.getElementById('newListName').value.trim();
-            
             if (!listName) {
                 alert('Please enter a list name');
                 return;
             }
-            
             closeListNameModal();
-            
-            // DEMO MODE - Just start extraction
-            selectedListId = 1;
-            startExtraction();
+            startExtraction({ list_name: listName });
         }
 
-        function startExtraction() {
-            document.getElementById('progressSection').classList.add('active');
+        function showChooseListModal(lists) {
+            document.getElementById('matchingCount').textContent = lists.reduce((n, l) => n + l.matches, 0);
+            const container = document.getElementById('listChoices');
+            container.innerHTML = '';
+            lists.forEach(list => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-secondary';
+                btn.style.marginBottom = '0.5rem';
+                btn.innerHTML = `${escapeHtml(list.name)} <span style="color: var(--text-secondary); font-weight: 500;">(${list.matches} already in this list)</span>`;
+                btn.onclick = () => {
+                    document.getElementById('chooseListModal').classList.remove('active');
+                    startExtraction({ list_id: list.id });
+                };
+                container.appendChild(btn);
+            });
+            document.getElementById('chooseListModal').classList.add('active');
+        }
+
+        function createNewListOption() {
+            document.getElementById('chooseListModal').classList.remove('active');
+            showListNameModal();
+        }
+
+        async function startExtraction(target) {
+            document.getElementById('actionButtons').innerHTML =
+                '<button class="btn btn-secondary" disabled style="opacity: 0.5; cursor: not-allowed; width: auto;">Starting...</button>';
+            try {
+                const result = await api('/api/extract', {
+                    method: 'POST',
+                    body: { rows: getUploadRows(), ...target }
+                });
+                if (result.added === 0) {
+                    alert('Everything in this file is already in that list. Showing the list now.');
+                }
+                refreshUser();
+                trackList(result.list_id);
+            } catch (error) {
+                alert(error.message);
+                document.getElementById('actionButtons').innerHTML =
+                    '<button class="btn btn-primary" style="width: auto;" onclick="prepareExtraction()">Extract Coordinates</button>';
+            }
+        }
+
+        // ===== RESULTS + LIVE PROGRESS =====
+        function renderResultsTable(rows) {
+            document.getElementById('columnsSection').style.display = 'none';
+            document.getElementById('previewSection').classList.add('active');
+            document.getElementById('tableHead').innerHTML =
+                '<tr><th style="width: 40px;">●</th><th>Place Name</th><th>URL</th>' +
+                '<th class="new-column">Latitude</th><th class="new-column">Longitude</th><th class="new-column">Address</th></tr>';
+
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td id="status-${r.position}"></td>
+                    <td title="${escapeHtml(r.title)}">${escapeHtml(r.title)}</td>
+                    <td class="url-cell"></td>
+                    <td id="lat-${r.position}" class="new-column">-</td>
+                    <td id="lng-${r.position}" class="new-column">-</td>
+                    <td id="addr-${r.position}" class="new-column">-</td>
+                `;
+                tr.children[2].appendChild(makeOpenLink(r.url));
+                tableBody.appendChild(tr);
+                updateRow(r);
+            });
+            document.getElementById('rowCount').textContent = `Total rows: ${rows.length}`;
+        }
+
+        function updateRow(r) {
+            const ui = { pending: 'pending', processing: 'processing', done: 'completed', error: 'error' }[r.status] || 'pending';
+            const statusEl = document.getElementById(`status-${r.position}`);
+            if (!statusEl) return false;
+            if (statusEl.dataset.state === ui) return true;
+            statusEl.dataset.state = ui;
+            statusEl.innerHTML = `<span class="row-status ${ui}" title="${escapeHtml(r.method || r.status)}"></span>`;
+
+            const cells = {
+                lat: [document.getElementById(`lat-${r.position}`), r.lat],
+                lng: [document.getElementById(`lng-${r.position}`), r.lng],
+                addr: [document.getElementById(`addr-${r.position}`), r.address],
+            };
+            Object.values(cells).forEach(([el, value]) => {
+                if (ui === 'completed' || ui === 'error') {
+                    const has = value !== null && value !== undefined && value !== '';
+                    el.textContent = has ? value : (ui === 'error' ? 'Not found' : '-');
+                    el.title = has ? value : '';
+                    el.className = `new-column ${has ? 'completed' : 'error'}`;
+                } else if (ui === 'processing') {
+                    el.textContent = 'Looking up...';
+                    el.className = 'new-column processing';
+                } else {
+                    el.textContent = '-';
+                    el.className = 'new-column';
+                }
+            });
+            return true;
+        }
+
+        function updateProgressUI(p) {
+            const total = p.total || 1;
+            const finishedCount = p.counts.done + p.counts.error;
+            const percentage = Math.round((finishedCount / total) * 100);
+            document.getElementById('progressBar').style.width = `${percentage}%`;
+            document.getElementById('progressStats').textContent = `${finishedCount} / ${p.total} (${percentage}%)`;
+            document.getElementById('completedCount').textContent = p.counts.done;
+            document.getElementById('processingCount').textContent = p.counts.processing;
+            document.getElementById('errorCount').textContent = p.counts.error;
+            document.getElementById('remainingCount').textContent = p.counts.pending;
+
+            const note = document.getElementById('progressNote');
+            let message = '';
+            if (!p.finished) {
+                if (p.queue_position && p.queue_position > 0 && p.counts.processing === 0) {
+                    message = `Waiting in line: ${p.queue_position} other list${p.queue_position === 1 ? ' is' : 's are'} ahead of yours.`;
+                } else {
+                    const left = p.counts.pending + p.counts.processing;
+                    message = `Time remaining: ${formatDuration(left * SECONDS_PER_PLACE)}. You can close this page; it keeps running.`;
+                }
+                if (p.note) message = `${p.note}. ${message}`;
+            }
+            note.textContent = message;
+            note.style.display = message ? 'block' : 'none';
+        }
+
+        function renderFinishedButtons(p) {
+            const retry = p.counts.error > 0
+                ? `<button class="btn btn-secondary" style="width: auto;" onclick="retryFailed(${p.id})">Retry ${p.counts.error} Failed</button>`
+                : '';
             document.getElementById('actionButtons').innerHTML = `
-                <button class="btn btn-secondary" disabled style="opacity: 0.5; cursor: not-allowed;">Processing...</button>
+                <button class="btn btn-secondary" style="width: auto;" onclick="showDashboard()">Back to Dashboard</button>
+                ${retry}
+                <button class="btn btn-primary" style="width: auto;" onclick="downloadList(${p.id})">Download CSV</button>
             `;
-
-            // DEMO MODE - Simulate extraction
-            simulateExtraction();
         }
 
-        // Simulate extraction for demo
-        function simulateExtraction() {
-            let completed = 0;
-            let current = 0;
-            const total = parsedData.length;
-            
-            const interval = setInterval(() => {
-                if (current >= total) {
-                    clearInterval(interval);
+        async function trackList(listId) {
+            stopPolling();
+            currentListId = listId;
+            let firstLoad = true;
+            document.getElementById('uploadContainer').style.display = 'none';
+            document.getElementById('progressSection').classList.add('active');
+
+            const poll = async () => {
+                if (currentListId !== listId) return;
+                let p;
+                try {
+                    p = await api(`/api/lists/${listId}/progress`);
+                } catch (error) {
+                    document.getElementById('progressNote').textContent = error.message;
+                    document.getElementById('progressNote').style.display = 'block';
+                    pollTimer = setTimeout(poll, POLL_MS * 3);
                     return;
                 }
-                
-                // Mark current row as processing
-                updateRow(current, {
-                    status: 'processing'
-                });
-                
-                // Simulate completion after 500ms
-                setTimeout(() => {
-                    const hasError = Math.random() < 0.05; // 5% error rate
-                    
-                    if (hasError) {
-                        updateRow(current, {
-                            status: 'error'
-                        });
-                    } else {
-                        updateRow(current, {
-                            status: 'completed',
-                            latitude: (9.4 + Math.random() * 0.2).toFixed(7),
-                            longitude: (100.0 + Math.random() * 0.1).toFixed(7),
-                            address: 'Sample Address, Thailand 84310'
-                        });
-                    }
-                    
-                    completed++;
-                    const errors = document.querySelectorAll('.row-status.error').length;
-                    updateProgress(completed, 0, errors, total);
-                    
-                    // When complete
-                    if (completed === total) {
-                        document.getElementById('progressTitle').innerHTML = '✓ Extraction Complete!';
-                        document.getElementById('actionButtons').innerHTML = `
-                            <button class="btn btn-secondary" onclick="showDemoDashboard()">View Dashboard</button>
-                            <button class="btn btn-primary" onclick="location.reload()">Upload Another File</button>
-                        `;
-                    }
-                }, 500);
-                
-                current++;
-                const errors = document.querySelectorAll('.row-status.error').length;
-                updateProgress(completed, 1, errors, total);
-                
-            }, 600);
-        }
+                if (currentListId !== listId) return;
 
-        function updateRow(index, data) {
-            const { latitude, longitude, address, status } = data;
-            
-            const statusEl = document.getElementById(`status-${index}`);
-            if (statusEl) {
-                statusEl.innerHTML = `<span class="row-status ${status}"></span>`;
-            }
-            
-            const latEl = document.getElementById(`lat-${index}`);
-            if (latEl && latitude) {
-                latEl.textContent = latitude;
-                latEl.className = 'new-column completed';
-            } else if (latEl && status === 'error') {
-                latEl.className = 'new-column error';
-                latEl.textContent = 'Error';
-            }
-            
-            const lngEl = document.getElementById(`lng-${index}`);
-            if (lngEl && longitude) {
-                lngEl.textContent = longitude;
-                lngEl.className = 'new-column completed';
-            } else if (lngEl && status === 'error') {
-                lngEl.className = 'new-column error';
-                lngEl.textContent = 'Error';
-            }
-            
-            const addrEl = document.getElementById(`addr-${index}`);
-            if (addrEl && address) {
-                addrEl.textContent = address;
-                addrEl.title = address;
-                addrEl.className = 'new-column completed';
-            } else if (addrEl && status === 'error') {
-                addrEl.className = 'new-column error';
-                addrEl.textContent = 'Error';
-            }
-        }
-
-        function updateProgress(completed, processing, errors, total) {
-            const percentage = Math.round((completed / total) * 100);
-            
-            document.getElementById('progressBar').style.width = `${percentage}%`;
-            document.getElementById('progressStats').textContent = `${completed} / ${total} (${percentage}%)`;
-            document.getElementById('completedCount').textContent = completed;
-            document.getElementById('processingCount').textContent = processing;
-            document.getElementById('errorCount').textContent = errors;
-            document.getElementById('remainingCount').textContent = total - completed - errors;
-        }
-
-        async function downloadResults() {
-            alert('Download feature requires backend');
-        }
-
-        // Demo Dashboard
-        function showDemoDashboard() {
-            document.getElementById('uploadSection').classList.remove('active');
-            document.getElementById('profileSection').classList.remove('active');
-            document.getElementById('dashboard').classList.add('active');
-            
-            // Update active nav button
-            document.getElementById('navDashboard').classList.add('active');
-            document.getElementById('navUpload').classList.remove('active');
-            document.getElementById('navProfile').classList.remove('active');
-            
-            // Show some fake lists for demo
-            const listName = document.getElementById('newListName')?.value;
-            const demoLists = [];
-            
-            // If user created a list, show it first
-            if (listName && parsedData) {
-                demoLists.push({
-                    id: 1, 
-                    name: listName, 
-                    location_count: parsedData.length, 
-                    updated_at: new Date().toISOString()
-                });
-            }
-            
-            // Add example lists
-            demoLists.push(
-                { id: 2, name: 'Thailand Trip 2025', location_count: 107, updated_at: '2025-01-10T10:00:00' },
-                { id: 3, name: 'Japan Planning', location_count: 45, updated_at: '2025-01-05T15:30:00' },
-                { id: 4, name: 'Europe Tour', location_count: 82, updated_at: '2024-12-20T09:15:00' }
-            );
-            
-            renderLists(demoLists);
-        }
-
-        function showUploadFromDashboard() {
-            document.getElementById('dashboard').classList.remove('active');
-            document.getElementById('profileSection').classList.remove('active');
-            document.getElementById('uploadSection').classList.add('active');
-            
-            // Update active nav button
-            document.getElementById('navDashboard').classList.remove('active');
-            document.getElementById('navUpload').classList.add('active');
-            document.getElementById('navProfile').classList.remove('active');
-        }
-
-        function showDashboard() {
-            showDemoDashboard();
-        }
-
-        function showUpload() {
-            showUploadFromDashboard();
-        }
-
-        function showProfile() {
-            document.getElementById('dashboard').classList.remove('active');
-            document.getElementById('uploadSection').classList.remove('active');
-            document.getElementById('profileSection').classList.add('active');
-            
-            // Update active nav button
-            document.getElementById('navDashboard').classList.remove('active');
-            document.getElementById('navUpload').classList.remove('active');
-            document.getElementById('navProfile').classList.add('active');
-        }
-
-        function handleDeleteAccount() {
-            if (confirm('Are you sure you want to delete your account? This action cannot be undone!')) {
-                if (confirm('This will permanently delete all your lists and locations. Are you absolutely sure?')) {
-                    alert('Account deleted! (Demo mode - not actually deleted)');
-                    // In real app, would call API and redirect to login
+                if (firstLoad || document.getElementById('tableBody').children.length !== p.rows.length) {
+                    document.getElementById('uploadTitle').textContent = p.name;
+                    document.getElementById('uploadDescription').textContent = p.finished
+                        ? 'Finished. Download the results below.'
+                        : 'Looking up each place on Google Maps.';
+                    renderResultsTable(p.rows);
+                    firstLoad = false;
+                } else {
+                    p.rows.forEach(updateRow);
                 }
+                updateProgressUI(p);
+
+                const title = document.getElementById('progressTitle');
+                if (p.finished) {
+                    title.innerHTML = p.counts.error
+                        ? `✓ Finished (${p.counts.error} could not be found)`
+                        : '✓ Extraction Complete!';
+                    document.getElementById('uploadDescription').textContent = 'Finished. Download the results below.';
+                    renderFinishedButtons(p);
+                    refreshUser();
+                } else {
+                    title.innerHTML = 'Extracting Coordinates <span class="processing-indicator"><span class="spinner" style="width: 16px; height: 16px; border-width: 2px; vertical-align: middle;"></span></span>';
+                    document.getElementById('actionButtons').innerHTML = `
+                        <button class="btn btn-secondary" style="width: auto;" onclick="showDashboard()">Back to Dashboard</button>
+                        <button class="btn btn-primary" style="width: auto;" onclick="downloadList(${p.id})">Download What's Done So Far</button>
+                    `;
+                    pollTimer = setTimeout(poll, POLL_MS);
+                }
+            };
+            poll();
+        }
+
+        async function retryFailed(listId) {
+            try {
+                await api(`/api/lists/${listId}/retry`, { method: 'POST' });
+                trackList(listId);
+            } catch (error) {
+                alert(error.message);
             }
         }
 
+        // ===== ACCOUNT =====
         function toggleEditAccount() {
-            const viewMode = document.getElementById('accountInfoView');
-            const editMode = document.getElementById('accountInfoEdit');
-            const editBtn = document.getElementById('editAccountBtn');
-            
             if (accountInfoEditMode) {
-                // Cancel editing
                 cancelEditAccount();
-            } else {
-                // Start editing
-                accountInfoEditMode = true;
-                viewMode.style.display = 'none';
-                editMode.style.display = 'block';
-                editBtn.textContent = 'Cancel';
-                editBtn.style.color = 'var(--error)';
-                
-                // Populate form with current values
-                document.getElementById('firstNameEdit').value = document.getElementById('firstNameDisplay').textContent;
-                document.getElementById('lastNameEdit').value = document.getElementById('lastNameDisplay').textContent;
+                return;
             }
+            accountInfoEditMode = true;
+            document.getElementById('accountInfoView').style.display = 'none';
+            document.getElementById('accountInfoEdit').style.display = 'block';
+            const editBtn = document.getElementById('editAccountBtn');
+            editBtn.textContent = 'Cancel';
+            editBtn.style.color = 'var(--error)';
+            document.getElementById('firstNameEdit').value = currentUser?.first_name || '';
+            document.getElementById('lastNameEdit').value = currentUser?.last_name || '';
         }
 
         function cancelEditAccount() {
-            const viewMode = document.getElementById('accountInfoView');
-            const editMode = document.getElementById('accountInfoEdit');
-            const editBtn = document.getElementById('editAccountBtn');
-            
             accountInfoEditMode = false;
-            viewMode.style.display = 'block';
-            editMode.style.display = 'none';
+            document.getElementById('accountInfoView').style.display = 'block';
+            document.getElementById('accountInfoEdit').style.display = 'none';
+            const editBtn = document.getElementById('editAccountBtn');
             editBtn.textContent = 'Edit';
             editBtn.style.color = 'var(--primary)';
+            ['currentPassword', 'newPassword', 'confirmNewPassword'].forEach(id => document.getElementById(id).value = '');
         }
 
-        function saveAccountInfo(event) {
+        async function saveAccountInfo(event) {
             event.preventDefault();
-            
-            const firstName = document.getElementById('firstNameEdit').value.trim();
-            const lastName = document.getElementById('lastNameEdit').value.trim();
             const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmNewPassword').value;
-            
-            // Validate password if provided
-            if (newPassword || confirmPassword) {
-                if (newPassword !== confirmPassword) {
-                    alert('Passwords do not match!');
+            if (newPassword || document.getElementById('confirmNewPassword').value) {
+                if (newPassword !== document.getElementById('confirmNewPassword').value) {
+                    alert('New passwords do not match');
                     return;
                 }
                 if (newPassword.length < 6) {
@@ -2456,38 +2484,45 @@
                     return;
                 }
             }
-            
-            // Update display
-            document.getElementById('firstNameDisplay').textContent = firstName;
-            document.getElementById('lastNameDisplay').textContent = lastName;
-            
-            // Update avatar with new first name initial
-            document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
-            
-            // Demo mode success message
-            let message = 'Account information updated successfully!';
-            if (newPassword) {
-                message = 'Account information and password updated successfully!';
-                // Clear password fields
-                document.getElementById('currentPassword').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('confirmNewPassword').value = '';
-            }
-            alert(message + ' (Demo mode)');
-            
-            // Exit edit mode
-            cancelEditAccount();
-        }
-
-
-        function handleDeleteAccount() {
-            if (confirm('Are you sure you want to delete your account? This action cannot be undone!')) {
-                if (confirm('This will permanently delete all your lists and locations. Are you absolutely sure?')) {
-                    alert('Account deleted! (Demo mode - not actually deleted)');
-                    // In real app, would call API and redirect to login
-                }
+            try {
+                const data = await api('/api/account', {
+                    method: 'PUT',
+                    body: {
+                        first_name: document.getElementById('firstNameEdit').value.trim(),
+                        last_name: document.getElementById('lastNameEdit').value.trim(),
+                        current_password: document.getElementById('currentPassword').value,
+                        new_password: newPassword
+                    }
+                });
+                setUser(data);
+                cancelEditAccount();
+                alert(newPassword ? 'Account and password updated.' : 'Account updated.');
+            } catch (error) {
+                alert(error.message);
             }
         }
+
+        async function handleDeleteAccount() {
+            if (!confirm('Are you sure you want to delete your account? This action cannot be undone!')) return;
+            if (!confirm('This will permanently delete all your lists and locations. Are you absolutely sure?')) return;
+            try {
+                await api('/api/account', { method: 'DELETE' });
+                currentUser = null;
+                showLogin();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        // Close modals with Escape, submit list name with Enter
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+            }
+            if (e.key === 'Enter' && document.getElementById('listNameModal').classList.contains('active')) {
+                confirmListName();
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,0 +1,4 @@
+flask>=3.0
+waitress>=3.0
+selenium>=4.15
+openpyxl>=3.1

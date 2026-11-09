@@ -112,7 +112,19 @@ def setup_driver():
         'intl.accept_languages': 'en-US,en',
         'profile.managed_default_content_settings.images': 2,
     })
-    driver = webdriver.Chrome(options=opts)
+    # Raspberry Pi / Linux: use the system Chromium and chromedriver from apt
+    # (Selenium can't download a driver for ARM). Windows/Mac: Selenium handles it.
+    import os
+    import shutil
+    from selenium.webdriver.chrome.service import Service
+    binary = os.environ.get('CHROME_BINARY') or shutil.which('chromium') or shutil.which('chromium-browser')
+    driver_path = os.environ.get('CHROMEDRIVER_PATH') or shutil.which('chromedriver')
+    if binary and sys.platform.startswith('linux'):
+        opts.binary_location = binary
+    if driver_path and sys.platform.startswith('linux'):
+        driver = webdriver.Chrome(service=Service(driver_path), options=opts)
+    else:
+        driver = webdriver.Chrome(options=opts)
     driver.set_page_load_timeout(40)
     return driver
 
