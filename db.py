@@ -41,6 +41,14 @@ CREATE TABLE IF NOT EXISTS locations (
 CREATE INDEX IF NOT EXISTS idx_locations_list ON locations(list_id, position);
 CREATE INDEX IF NOT EXISTS idx_locations_status ON locations(status);
 
+-- Login tokens: one per signed-in browser
+CREATE TABLE IF NOT EXISTS tokens (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    last_used TEXT NOT NULL
+);
+
 -- Shared lookup cache: the same Google Maps link never has to be opened twice
 CREATE TABLE IF NOT EXISTS place_cache (
     url TEXT PRIMARY KEY,

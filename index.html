@@ -1631,9 +1631,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         // ===== CONFIGURATION =====
-        // Empty = same server that serves this page (the Pi). Only change this if the
-        // website is hosted somewhere else, e.g. 'https://maps.yourdomain.com'
-        const API_BASE = '';
+        // The Pi's public HTTPS address (your Cloudflare Tunnel hostname), no trailing slash.
+        // Used when this page is opened from GitHub Pages. When the Pi serves the page itself,
+        // it talks to its own address automatically.
+        const PI_URL = 'https://maps.yourdomain.com';
+
+        const SERVED_BY_PI = !location.hostname.endsWith('github.io') && location.protocol !== 'file:';
+        const API_BASE = SERVED_BY_PI ? '' : PI_URL.replace(/\/+$/, '');
         const POLL_MS = 2000;
         const SECONDS_PER_PLACE = 5;   // used only for the time estimate
 
@@ -1648,6 +1652,19 @@
         let pollTimer = null;
         let accountInfoEditMode = false;
 
+        // ===== LOGIN TOKEN (kept in this browser) =====
+        const TOKEN_KEY = 'mapcord_token';
+        let memoryToken = null;   // fallback if the browser blocks storage
+        function getToken() {
+            try { return localStorage.getItem(TOKEN_KEY) || memoryToken; } catch (e) { return memoryToken; }
+        }
+        function setToken(token) {
+            memoryToken = token || null;
+            try {
+                if (token) localStorage.setItem(TOKEN_KEY, token); else localStorage.removeItem(TOKEN_KEY);
+            } catch (e) {}
+        }
+
         // ===== HELPERS =====
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -1655,22 +1672,28 @@
             }[c]));
         }
 
-        async function api(path, options = {}) {
-            const opts = { credentials: 'include', ...options };
+        async function rawFetch(path, options = {}) {
+            const opts = { ...options, headers: { ...(options.headers || {}) } };
+            const token = getToken();
+            if (token) opts.headers['Authorization'] = `Bearer ${token}`;
             if (opts.body && typeof opts.body !== 'string') {
-                opts.headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+                opts.headers['Content-Type'] = 'application/json';
                 opts.body = JSON.stringify(opts.body);
             }
-            let response;
             try {
-                response = await fetch(`${API_BASE}${path}`, opts);
+                return await fetch(`${API_BASE}${path}`, opts);
             } catch (e) {
-                throw new Error('Could not reach the server. Please check your connection.');
+                throw new Error('Could not reach the server. It may be offline right now; please try again later.');
             }
+        }
+
+        async function api(path, options = {}) {
+            const response = await rawFetch(path, options);
             let data = {};
             try { data = await response.json(); } catch (e) { /* non-JSON */ }
             if (response.status === 401 && !path.startsWith('/api/login') && !path.startsWith('/api/register')) {
                 currentUser = null;
+                setToken(null);
                 showLogin();
             }
             if (!response.ok) {
@@ -1755,6 +1778,17 @@
         }
 
         async function checkAuth() {
+            if (!SERVED_BY_PI && PI_URL.includes('yourdomain.com')) {
+                showLogin();
+                const el = document.getElementById('loginError');
+                el.textContent = "This site isn't connected to its server yet. (Set PI_URL near the top of the page's script.)";
+                el.style.display = 'block';
+                return;
+            }
+            if (!getToken()) {
+                showLogin();
+                return;
+            }
             try {
                 const data = await api('/api/check-auth');
                 if (data.authenticated) {
@@ -1779,6 +1813,7 @@
                         password: document.getElementById('loginPassword').value
                     }
                 });
+                setToken(data.token);
                 setUser(data);
                 document.getElementById('loginPassword').value = '';
                 showDashboard();
@@ -1799,6 +1834,7 @@
                     method: 'POST',
                     body: { email: document.getElementById('registerEmail').value, password }
                 });
+                setToken(data.token);
                 setUser(data);
                 document.getElementById('registerPassword').value = '';
                 document.getElementById('registerPasswordConfirm').value = '';
@@ -1811,6 +1847,7 @@
         async function logout() {
             stopPolling();
             try { await api('/api/logout', { method: 'POST' }); } catch (e) {}
+            setToken(null);
             currentUser = null;
             showLogin();
         }
@@ -1994,8 +2031,27 @@
             }
         }
 
-        function downloadList(listId) {
-            window.location.href = `${API_BASE}/api/lists/${listId}/download`;
+        async function downloadList(listId) {
+            try {
+                const response = await rawFetch(`/api/lists/${listId}/download`);
+                if (!response.ok) {
+                    let msg = 'Download failed';
+                    try { msg = (await response.json()).error || msg; } catch (e) {}
+                    throw new Error(msg);
+                }
+                const disposition = response.headers.get('Content-Disposition') || '';
+                const match = disposition.match(/filename="([^"]+)"/);
+                const blob = await response.blob();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = match ? match[1] : 'locations_with_coords.csv';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+            } catch (error) {
+                alert(error.message);
+            }
         }
 
         // Open a saved list: shows its results, and live progress if it's still running
@@ -2507,6 +2563,7 @@
             if (!confirm('This will permanently delete all your lists and locations. Are you absolutely sure?')) return;
             try {
                 await api('/api/account', { method: 'DELETE' });
+                setToken(null);
                 currentUser = null;
                 showLogin();
             } catch (error) {

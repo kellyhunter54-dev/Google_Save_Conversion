@@ -11,8 +11,8 @@ for 200 places). Users can close the page and come back; their list keeps proces
 
 | File | What it does |
 |---|---|
-| `MapCord.html` | The website (accounts, upload, live progress, dashboard, CSV download) |
-| `app.py` | The server: serves the website and its API |
+| `index.html` | The website (accounts, upload, live progress, dashboard, CSV download). Hosted on GitHub Pages |
+| `app.py` | The server on the Pi: logins, processing, results (it can also serve the website) |
 | `worker.py` | Background worker: one Chrome browser that processes lists in order |
 | `db.py` | SQLite database setup (`mapcord.db` is created automatically) |
 | `extract_coords_from_urls.py` | The lookup logic. Also works on its own as a desktop script |
@@ -29,6 +29,17 @@ for 200 places). Users can close the page and come back; their list keeps proces
 - **Google rate limits:** if Google shows a CAPTCHA page, the worker pauses 5 minutes and
   retries. Failed rows can be retried from the website with the "Retry Failed" button.
 
+### How the pieces connect
+
+```
+GitHub Pages (index.html)  --->  Pi (app.py, via Cloudflare Tunnel HTTPS address)
+       the website                  logins, processing, results, CSV downloads
+```
+
+The website is a static page on GitHub Pages. It talks to the Pi through the Pi's public
+address, which is set in one place: `PI_URL` near the top of the script in `index.html`.
+If the Pi is off, the site still loads but shows that it can't reach the server.
+
 ---
 
 ## Try it on your own computer first (optional)
@@ -40,7 +51,8 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Open http://localhost:5000, create an account and upload your CSV.
+Open http://localhost:5000, create an account and upload your CSV. (When the Pi or your
+computer serves the page itself, it doesn't need `PI_URL`.)
 
 ---
 
@@ -116,7 +128,24 @@ so it's only for testing.
    `cloudflared` and connects it.
 3. Add a public hostname, for example `maps.yourdomain.com`, pointing to `http://localhost:5000`.
 
-### 6. Updating later
+### 6. Connect the GitHub Pages site to the Pi
+
+1. Open `index.html` in GitHub (click the pencil icon to edit).
+2. Near the top of the script, change
+   `const PI_URL = 'https://maps.yourdomain.com';`
+   to your tunnel address from step 5, for example `https://maps.kellysdomain.com`.
+3. Commit. GitHub Pages updates within a minute or two.
+
+The Pi only accepts requests from `https://kellyhunter54-dev.github.io`. If you ever move the
+site to a different address (like a custom domain), add it to the service file:
+
+```
+Environment=MAPCORD_ALLOWED_ORIGINS=https://kellyhunter54-dev.github.io,https://maps.kellysdomain.com
+```
+
+then run `sudo systemctl daemon-reload && sudo systemctl restart mapcord`.
+
+### 7. Updating later
 
 ```
 cd ~/Google_Save_Conversion
@@ -127,8 +156,8 @@ sudo systemctl restart mapcord
 
 ### Backups
 
-Everything (users, lists, results, cache) is in `mapcord.db`. Copy that one file to back it up.
-Keep `secret_key.txt` too; without it, everyone gets logged out.
+Everything (users, logins, lists, results, cache) is in `mapcord.db`. Copy that one file to
+back it up.
 
 ---
 

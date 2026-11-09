@@ -4,6 +4,9 @@ MapCord backend: serves the website and the API it talks to.
 
 Run:   python app.py              (http://localhost:5000)
 Pi:    see README.md for running it as a service and putting it online.
+
+The website can be served from here (the Pi) or from GitHub Pages. Logins use a token
+the browser sends in the Authorization header, so they work across both.
 """
 
 import csv
@@ -14,7 +17,9 @@ import secrets
 from functools import wraps
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, request, send_from_directory, session
+from datetime import datetime, timedelta, timezone
+
+from flask import Flask, Response, g, jsonify, request, send_from_directory
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import extract_coords_from_urls as extractor
@@ -23,35 +28,75 @@ from worker import Worker
 
 BASE_DIR = Path(__file__).resolve().parent
 MAX_ROWS_PER_UPLOAD = 2000
+TOKEN_DAYS = 30   # stay logged in this long without using the site
 
-
-def load_secret_key():
-    """Keeps users logged in across restarts. Stored in secret_key.txt (not committed)."""
-    if os.environ.get('MAPCORD_SECRET'):
-        return os.environ['MAPCORD_SECRET']
-    key_file = BASE_DIR / 'secret_key.txt'
-    if not key_file.exists():
-        key_file.write_text(secrets.token_hex(32))
-    return key_file.read_text().strip()
-
+# Websites allowed to call this server from another address (comma separated).
+# The Pi's own address always works; this is for the GitHub Pages copy of the site.
+ALLOWED_ORIGINS = {
+    o.strip().rstrip('/') for o in
+    os.environ.get('MAPCORD_ALLOWED_ORIGINS', 'https://kellyhunter54-dev.github.io').split(',')
+    if o.strip()
+}
 
 app = Flask(__name__)
-app.config.update(
-    SECRET_KEY=load_secret_key(),
-    MAX_CONTENT_LENGTH=10 * 1024 * 1024,
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
-    PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 30,   # stay logged in 30 days
-)
+app.config.update(MAX_CONTENT_LENGTH=10 * 1024 * 1024)
 init_db()
 worker = Worker()
+
+
+# ===== CROSS-SITE ACCESS (GitHub Pages -> Pi) =====
+@app.after_request
+def add_cors_headers(response):
+    origin = (request.headers.get('Origin') or '').rstrip('/')
+    if origin and (origin in ALLOWED_ORIGINS or '*' in ALLOWED_ORIGINS):
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Vary'] = 'Origin'
+        response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Expose-Headers'] = 'Content-Disposition'
+        response.headers['Access-Control-Max-Age'] = '600'
+    return response
+
+
+# ===== LOGIN TOKENS =====
+def issue_token(db, user_id):
+    token = secrets.token_urlsafe(32)
+    db.execute("INSERT INTO tokens (token, user_id, created_at, last_used) VALUES (?,?,?,?)",
+               (token, user_id, now(), now()))
+    return token
+
+
+def token_from_request():
+    header = request.headers.get('Authorization', '')
+    return header[7:].strip() if header.startswith('Bearer ') else ''
+
+
+def user_id_from_token(db):
+    token = token_from_request()
+    if not token:
+        return None
+    row = db.execute("SELECT user_id, last_used FROM tokens WHERE token=?", (token,)).fetchone()
+    if not row:
+        return None
+    last_used = datetime.fromisoformat(row['last_used'])
+    if datetime.now(timezone.utc) - last_used > timedelta(days=TOKEN_DAYS):
+        db.execute("DELETE FROM tokens WHERE token=?", (token,))
+        db.commit()
+        return None
+    if datetime.now(timezone.utc) - last_used > timedelta(hours=1):
+        db.execute("UPDATE tokens SET last_used=? WHERE token=?", (now(), token))
+        db.commit()
+    return row['user_id']
 
 
 # ===== HELPERS =====
 def login_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        if 'user_id' not in session:
+        db = get_db()
+        g.user_id = user_id_from_token(db)
+        db.close()
+        if g.user_id is None:
             return jsonify(error='Not logged in'), 401
         return fn(*args, **kwargs)
     return wrapper
@@ -60,7 +105,7 @@ def login_required(fn):
 def user_list(db, list_id):
     """Returns the list row if it belongs to the logged-in user, else None."""
     return db.execute(
-        "SELECT * FROM lists WHERE id=? AND user_id=?", (list_id, session['user_id'])
+        "SELECT * FROM lists WHERE id=? AND user_id=?", (list_id, g.user_id)
     ).fetchone()
 
 
@@ -98,19 +143,17 @@ def clean_rows(raw_rows):
 # ===== WEBSITE =====
 @app.route('/')
 def index():
-    return send_from_directory(BASE_DIR, 'MapCord.html')
+    return send_from_directory(BASE_DIR, 'index.html')
 
 
 # ===== AUTH =====
 @app.route('/api/check-auth')
 def check_auth():
-    if 'user_id' not in session:
-        return jsonify(authenticated=False)
     db = get_db()
-    payload = user_payload(db, session['user_id'])
+    user_id = user_id_from_token(db)
+    payload = user_payload(db, user_id) if user_id else None
     db.close()
     if not payload:
-        session.clear()
         return jsonify(authenticated=False)
     return jsonify(authenticated=True, **payload)
 
@@ -133,13 +176,11 @@ def register():
         "INSERT INTO users (email, password_hash, created_at) VALUES (?,?,?)",
         (email, generate_password_hash(password), now())
     )
+    token = issue_token(db, cur.lastrowid)
     db.commit()
-    session.clear()
-    session.permanent = True
-    session['user_id'] = cur.lastrowid
     payload = user_payload(db, cur.lastrowid)
     db.close()
-    return jsonify(**payload)
+    return jsonify(token=token, **payload)
 
 
 @app.route('/api/login', methods=['POST'])
@@ -152,17 +193,21 @@ def login():
     if not u or not check_password_hash(u['password_hash'], password):
         db.close()
         return jsonify(error='Incorrect email or password'), 401
-    session.clear()
-    session.permanent = True
-    session['user_id'] = u['id']
+    token = issue_token(db, u['id'])
+    db.commit()
     payload = user_payload(db, u['id'])
     db.close()
-    return jsonify(**payload)
+    return jsonify(token=token, **payload)
 
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
-    session.clear()
+    token = token_from_request()
+    if token:
+        db = get_db()
+        db.execute("DELETE FROM tokens WHERE token=?", (token,))
+        db.commit()
+        db.close()
     return jsonify(ok=True)
 
 
@@ -171,7 +216,7 @@ def logout():
 def update_account():
     data = request.get_json(silent=True) or {}
     db = get_db()
-    u = db.execute("SELECT * FROM users WHERE id=?", (session['user_id'],)).fetchone()
+    u = db.execute("SELECT * FROM users WHERE id=?", (g.user_id,)).fetchone()
 
     new_pw = data.get('new_password') or ''
     if new_pw:
@@ -183,6 +228,8 @@ def update_account():
             return jsonify(error='New password must be at least 6 characters'), 400
         db.execute("UPDATE users SET password_hash=? WHERE id=?",
                    (generate_password_hash(new_pw), u['id']))
+        # sign out every other browser
+        db.execute("DELETE FROM tokens WHERE user_id=? AND token<>?", (u['id'], token_from_request()))
 
     db.execute("UPDATE users SET first_name=?, last_name=? WHERE id=?",
                ((data.get('first_name') or '').strip()[:100],
@@ -197,12 +244,11 @@ def update_account():
 @login_required
 def delete_account():
     db = get_db()
-    for r in db.execute("SELECT id FROM lists WHERE user_id=?", (session['user_id'],)).fetchall():
+    for r in db.execute("SELECT id FROM lists WHERE user_id=?", (g.user_id,)).fetchall():
         worker.remove(r['id'])
-    db.execute("DELETE FROM users WHERE id=?", (session['user_id'],))
+    db.execute("DELETE FROM users WHERE id=?", (g.user_id,))
     db.commit()
     db.close()
-    session.clear()
     return jsonify(ok=True)
 
 
@@ -216,7 +262,7 @@ def get_lists():
         "SUM(CASE WHEN loc.status IN ('pending','processing') THEN 1 ELSE 0 END) AS pending_count "
         "FROM lists l LEFT JOIN locations loc ON loc.list_id = l.id "
         "WHERE l.user_id=? GROUP BY l.id ORDER BY l.updated_at DESC",
-        (session['user_id'],)
+        (g.user_id,)
     ).fetchall()
     db.close()
     return jsonify(lists=[dict(r) for r in rows])
@@ -355,7 +401,7 @@ def match_upload():
         for r in db.execute(
             f"SELECT l.id, l.name, COUNT(DISTINCT loc.url) AS matches FROM locations loc "
             f"JOIN lists l ON l.id = loc.list_id WHERE l.user_id=? AND loc.url IN ({q}) GROUP BY l.id",
-            [session['user_id'], *chunk]
+            [g.user_id, *chunk]
         ).fetchall():
             entry = lists.setdefault(r['id'], {'id': r['id'], 'name': r['name'], 'matches': 0})
             entry['matches'] += r['matches']
@@ -391,7 +437,7 @@ def start_extraction():
     else:
         name = (data.get('list_name') or '').strip()[:200] or 'Untitled list'
         cur = db.execute("INSERT INTO lists (user_id, name, created_at, updated_at) VALUES (?,?,?,?)",
-                         (session['user_id'], name, now(), now()))
+                         (g.user_id, name, now(), now()))
         list_id = cur.lastrowid
 
     # Skip links this list already has; keep upload order for the rest
